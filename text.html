@@ -1,1 +1,1035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sand Table Text Compiler</title>
+    <style>
+        :root {
+            --bg-dark: #0f0e0d;
+            --panel-bg: #1a1816;
+            --input-bg: #090807;
+            --accent-gold: #c59b4e;
+            --accent-gold-dim: #7c5f2b;
+            --accent-gold-light: #fff0d0;
+            --sand-base: #d9b48f;
+            --text-main: #e6dec9;
+            --text-muted: #8c8273;
+            --btn-green: #255427;
+            --btn-green-hover: #327035;
+            --btn-blue: #1e3a5f;
+            --btn-blue-hover: #2a5282;
+            --border-color: #2d2722;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 30px 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            width: 100%;
+            max-width: 1140px;
+        }
+
+        h1 {
+            color: var(--accent-gold-light);
+            margin: 0 0 6px 0;
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        .subtitle {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 460px 1fr;
+            gap: 30px;
+            max-width: 1140px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .preview-panel {
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle at center, #231f1a 0%, var(--panel-bg) 100%);
+            min-height: 500px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .slider-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .slider-group input { flex: 1; }
+        .slider-val { font-family: monospace; font-size: 0.9rem; color: var(--accent-gold-light); width: 45px; text-align: right; }
+
+        label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--accent-gold-light);
+        }
+
+        textarea, select, input[type="text"] {
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            color: #fff;
+            padding: 12px 14px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.25s ease;
+        }
+
+        textarea:focus, select:focus, input[type="text"]:focus {
+            border-color: var(--accent-gold);
+        }
+
+        /* Suggestion 13: Responsive Canvas Constraints */
+        .canvas-rim {
+            position: relative;
+            padding: 16px;
+            background: #2b2621;
+            border-radius: 50%;
+            border: 6px solid #aa803b;
+            box-shadow: 0 15px 45px rgba(0,0,0,0.8);
+            width: 100%;
+            max-width: 560px;
+            box-sizing: border-box;
+            aspect-ratio: 1 / 1; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        canvas {
+            background-color: var(--sand-base);
+            border-radius: 50%;
+            box-shadow: inset 0 0 25px rgba(0,0,0,0.5);
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .telemetry-display {
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--accent-gold);
+            border-radius: 6px;
+            padding: 14px;
+            font-family: monospace;
+            font-size: 0.8rem;
+            line-height: 1.6;
+        }
+
+        .telemetry-header {
+            color: var(--accent-gold-light);
+            font-weight: bold;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+        }
+
+        .telemetry-row {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px dashed #221f1b;
+            padding: 4px 0;
+        }
+
+        .telemetry-val { color: #fff; font-weight: bold; }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .history-item:hover { border-color: var(--accent-gold-dim); }
+
+        .action-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        button {
+            padding: 14px 16px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            border: none;
+            flex: 1;
+        }
+
+        #export-btn { background: #2a2724; color: var(--text-main); border: 1px solid var(--border-color); }
+        #save-btn { background: linear-gradient(180deg, var(--btn-green-hover) 0%, var(--btn-green) 100%); color: #fff; }
+        #stream-btn { background: linear-gradient(180deg, var(--btn-blue-hover) 0%, var(--btn-blue) 100%); color: #fff; }
+        #stream-btn.streaming { background: #9b2c2c; }
+
+        #status-banner {
+            font-size: 0.85rem;
+            text-align: center;
+            min-height: 1.25rem;
+            font-weight: 600;
+        }
+
+        @media (max-width: 950px) {
+            .dashboard-grid { grid-template-columns: 1fr; }
+            .preview-panel { min-height: auto; padding: 40px 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Sand Table Text Compiler</h1>
+        <div class="subtitle">Unified Raspberry Pi Serial Interface</div>
+    </header>
+
+    <div class="dashboard-grid">
+        <div class="panel">
+            <div class="form-group">
+                <label for="text-input">Text Message Payload</label>
+                <textarea id="text-input" rows="3" placeholder="Enter words to weave...">testing</textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="filename-input">Pattern Save Name</label>
+                <input type="text" id="filename-input" value="testing">
+            </div>
+
+            <div class="form-group">
+                <label for="mode-select">Geometric Projection Profile</label>
+                <select id="mode-select">
+                    <option value="centered">Centered Block Stack</option>
+                    <option value="circle">Concentric Circular Ring Bend</option>
+                    <option value="spiral">Continuous Archimedean Spiral Wrap</option>
+                    <option value="sinewave">Rolling Sine Wave Horizontal Ribbon</option>
+                    <option value="ellipse">The Gentle Ellipse</option>
+                    <option value="petal">The Soft Petal (5-Ripple)</option>
+                    <option value="peanut">The Cassini Peanut</option>
+                    <option value="squircle">The Perimeter Squircle</option>
+                </select>
+            </div>
+
+            <!-- Suggestion 12: Feedrate Slider -->
+            <div class="form-group">
+                <label for="speed-slider">Streaming Feedrate</label>
+                <div class="slider-group">
+                    <input type="range" id="speed-slider" min="5" max="150" value="45">
+                    <div id="speed-val" class="slider-val">45ms</div>
+                </div>
+            </div>
+
+            <div class="telemetry-display">
+                <div class="telemetry-header">[ Pi Controller Telemetry Dashboard ]</div>
+                <div class="telemetry-row"><span>Vector Output Nodes:</span><span id="tel-nodes" class="telemetry-val">--</span></div>
+                <div class="telemetry-row"><span>Rotational Matrix Loops:</span><span id="tel-revs" class="telemetry-val">--</span></div>
+                <div class="telemetry-row"><span>Calculated Font Scale:</span><span id="tel-scale" class="telemetry-val">--</span></div>
+            </div>
+
+            <div class="history-section">
+                <label>Recent Saved Patterns</label>
+                <ul id="history-list" class="history-list"></ul>
+            </div>
+
+            <div class="action-container">
+                <div id="status-banner"></div>
+                <div class="btn-row">
+                    <button id="export-btn">Download THR</button>
+                    <button id="save-btn">📤 Save to Table</button>
+                </div>
+                <button id="stream-btn">🎮 Stream Live to Gantry</button>
+            </div>
+        </div>
+
+        <div class="panel preview-panel">
+            <div class="canvas-rim">
+                <canvas id="sandCanvas"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Suggestion 3: Pre-calculate and Cache Glyphs
+        class ProportionalRetracedFont {
+            static GLYPHS = {
+                'a': { width: 0.5, path: [[0,0], [0,0.85], [0.5,0.85], [0.5,0], [0.5,0.4], [0,0.4], [0.5,0.4], [0.5,0], [0.5,0.85], [0,0.85], [0,0]] },
+                'b': { width: 0.5, path: [[0,0], [0,0.85], [0.5,0.85], [0.5,0.45], [0,0.45], [0.5,0.45], [0.5,0], [0,0]] },
+                'c': { width: 0.5, path: [[0,0], [0.5,0], [0,0], [0,0.85], [0.5,0.85], [0,0.85], [0,0]] },
+                'd': { width: 0.5, path: [[0,0], [0.5,0], [0.5,0.85], [0,0.85], [0,0]] },
+                'e': { width: 0.5, path: [[0,0], [0.5,0], [0,0], [0,0.45], [0.4,0.45], [0,0.45], [0,0.85], [0.5,0.85], [0,0.85], [0,0]] },
+                'f': { width: 0.5, path: [[0,0], [0,0.45], [0.4,0.45], [0,0.45], [0,0.85], [0.5,0.85], [0,0.85], [0,0]] },
+                'g': { width: 0.5, path: [[0,0], [0.5,0], [0.5,0.45], [0.25,0.45], [0.5,0.45], [0.5,0], [0,0], [0,0.85], [0.5,0.85], [0,0.85], [0,0]] },
+                'h': { width: 0.5, path: [[0,0], [0,0.85], [0,0.45], [0.5,0.45], [0.5,0.85], [0.5,0], [0.5,0.45], [0,0.45], [0,0]] },
+                'i': { width: 0.25, path: [[0,0], [0.25,0], [0.125,0], [0.125,0.85], [0.25,0.85], [0,0.85], [0.125,0.85], [0.125,0], [0,0]] },
+                'j': { width: 0.5, path: [[0,0], [0.25,0], [0.25,0.85], [0.5,0.85], [0,0.85], [0.25,0.85], [0.25,0], [0,0]] },
+                'k': { width: 0.5, path: [[0,0], [0,0.85], [0,0.45], [0.5,0.85], [0,0.45], [0.5,0], [0,0.45], [0,0]] },
+                'l': { width: 0.5, path: [[0,0], [0.5,0], [0,0], [0,0.85], [0,0]] },
+                'm': { width: 0.5, path: [[0,0], [0,0.85], [0.25,0.35], [0.5,0.85], [0.5,0], [0.5,0.85], [0.25,0.35], [0,0.85], [0,0]] },
+                'n': { width: 0.5, path: [[0,0], [0,0.85], [0.5,0], [0.5,0.85], [0.5,0], [0,0.85], [0,0]] },
+                'o': { width: 0.5, path: [[0,0], [0.5,0], [0.5,0.85], [0,0.85], [0,0]] },
+                'p': { width: 0.5, path: [[0,0], [0,0.85], [0.5,0.85], [0.5,0.45], [0,0.45], [0,0]] },
+                'q': { width: 0.5, path: [[0,0], [0.5,0], [0.5,0.85], [0,0.85], [0,0], [0.25,0.25], [0.5,-0.25], [0.25,0.25], [0,0]] },
+                'r': { width: 0.5, path: [[0,0], [0,0.85], [0.5,0.85], [0.5,0.45], [0,0.45], [0.5,0], [0,0.45], [0,0]] },
+                's': { width: 0.5, path: [[0,0], [0.5,0], [0.5,0.45], [0,0.45], [0,0.85], [0.5,0.85], [0,0.85], [0,0.45], [0.5,0.45], [0.5,0], [0,0]] },
+                't': { width: 0.5, path: [[0,0], [0.25,0], [0.25,0.85], [0.5,0.85], [0,0.85], [0.25,0.85], [0.25,0], [0,0]] },
+                'u': { width: 0.5, path: [[0,0], [0,0.85], [0,0], [0.5,0], [0.5,0.85], [0.5,0], [0,0]] },
+                'v': { width: 0.5, path: [[0,0], [0.25,0], [0,0.85], [0.25,0], [0.5,0.85], [0.25,0], [0,0]] },
+                'w': { width: 0.65, path: [[0,0], [0,0.85], [0,0], [0.25,0.5], [0.5,0], [0.5,0.85], [0.5,0], [0.25,0.5], [0,0]] },
+                'x': { width: 0.5, path: [[0,0], [0.5,0.85], [0.25,0.425], [0,0.85], [0.25,0.425], [0.5,0], [0.25,0.425], [0,0]] },
+                'y': { width: 0.5, path: [[0,0], [0.25,0], [0.25,0.45], [0,0.85], [0.25,0.45], [0.5,0.85], [0.25,0.45], [0.25,0], [0,0]] },
+                'z': { width: 0.5, path: [[0,0], [0.5,0], [0,0], [0.5,0.85], [0,0.85], [0.5,0.85], [0,0]] },
+                '1': { width: 0.3, path: [[0,0], [0.25,0], [0.25,0.85], [0.05,0.65], [0.25,0.85], [0.25,0], [0,0]] },
+                '2': { width: 0.5, path: [[0,0], [0.5,0], [0,0], [0,0.45], [0.5,0.45], [0.5,0.85], [0,0.85], [0.5,0.85], [0.5,0.45], [0,0.45], [0,0]] },
+                '3': { width: 0.5, path: [[0,0], [0.5,0], [0.5,0.45], [0.25,0.45], [0.5,0.45], [0.5,0.85], [0,0.85], [0.5,0.85], [0.5,0.45], [0.5,0], [0,0]] },
+                '4': { width: 0.5, path: [[0,0], [0.4,0], [0.4,0.85], [0,0.45], [0.4,0.45], [0,0.45], [0.4,0.85], [0.4,0], [0,0]] },
+                '5': { width: 0.5, path: [[0,0], [0.5,0], [0.5,0.45], [0,0.45], [0,0.85], [0.5,0.85], [0,0.85], [0,0.45], [0.5,0.45], [0.5,0], [0,0]] },
+                '6': { width: 0.5, path: [[0,0], [0.5,0], [0.5,0.45], [0,0.45], [0,0], [0,0.85], [0.5,0.85], [0,0.85], [0,0]] },
+                '7': { width: 0.5, path: [[0,0], [0.5,0.85], [0,0.85], [0.5,0.85], [0,0]] },
+                '8': { width: 0.5, path: [[0,0], [0.5,0], [0.5,0.85], [0,0.85], [0,0], [0.0,0.45], [0.5,0.45], [0,0.45], [0,0]] },
+                '9': { width: 0.5, path: [[0,0], [0.5,0], [0.5,0.85], [0,0.85], [0,0.45], [0.5,0.45], [0.5,0], [0,0]] },
+                '0': { width: 0.5, path: [[0,0], [0.5,0], [0.5,0.85], [0,0.85], [0,0], [0.5,0.85], [0,0]] },
+                '!': { width: 0.3, path: [[0,0], [0.2,0], [0.2,0.15], [0.1,0.15], [0.1,0], [0.15,0], [0.15,0.3], [0.05,0.85], [0.25,0.85], [0.15,0.3], [0.15,0], [0,0]] },
+                '@': { width: 0.6, path: [[0,0], [0.5,0], [0.5,0.85], [0,0.85], [0,0.15], [0.35,0.15], [0.35,0.55], [0.15,0.55], [0.15,0.35], [0.35,0.35], [0.15,0.35], [0.15,0.55], [0.35,0.55], [0.35,0.15], [0,0.15], [0,0.85], [0.5,0.85], [0.5,0], [0,0]] },
+                '#': { width: 0.6, path: [[0,0], [0.5,0], [0.5,0.3], [0,0.3], [0,0.6], [0.5,0.6], [0.5,0.85], [0.35,0.85], [0.35,0], [0.15,0], [0.15,0.85], [0,0.85], [0,0]] },
+                '$': { width: 0.6, path: [[0,0], [0.25,0], [0.25,-0.15], [0.25,1], [0.25,0.85], [0,0.85], [0,0.45], [0.5,0.45], [0.5,0], [0,0], [0.5,0], [0.5,0.45], [0,0.45], [0,0.85], [0.25,0.85], [0.25,0], [0,0]] },
+                '%': { width: 0.6, path: [[0,0], [0.5,0.85], [0,0.85], [0,0.55], [0.2,0.55], [0.2,0.85], [0,0.85], [0.5,0.85], [0,0], [0.3,0], [0.3,0.3], [0.5,0.3], [0.5,0], [0.3,0], [0,0]] },
+                '^': { width: 0.6, path: [[0,0], [0.25,0], [0.25,0.45], [0,0.45], [0.25,0.85], [0.5,0.45], [0.25,0.45], [0.25,0], [0,0]] },
+                '&': { width: 0.6, path: [[0,0], [0.5,0], [0.1,0.45], [0.1,0.85], [0.4,0.85], [0.4,0.45], [0,0], [0.4,0.45], [0.4,0.85], [0.1,0.85], [0.1,0.45], [0.5,0], [0,0]] },
+                '*': { width: 0.6, path: [[0,0], [0.25,0], [0.25,0.45], [0,0.45], [0.5,0.85], [0.25,0.65], [0.25,0.85], [0.25,0.65], [0,0.85], [0.5,0.45], [0,0.45], [0.25,0.45], [0.25,0], [0,0]] },
+                '(': { width: 0.35, path: [[0,0], [0.25,0], [0.05,0.425], [0.25,0.85], [0.05,0.425], [0.25,0], [0,0]] },
+                ')': { width: 0.35, path: [[0,0], [0.25,0.425], [0,0.85], [0.25,0.425], [0,0]] },
+                '.': { width: 0.25, path: [[0,0], [0.15,0], [0.15,0.15], [0,0.15], [0,0]] },
+                ',': { width: 0.25, path: [[0,0], [0.15,0], [0.15,0.15], [0,0.15], [0,0], [0.15,0], [0.05,-0.25], [0.15,0], [0,0]] },
+                '-': { width: 0.5, path: [[0,0], [0,0.45], [0.4,0.45], [0,0.45], [0,0]] },
+                '?': { width: 0.5, path: [[0,0], [0.25,0], [0.25,0.15], [0.35,0.15], [0.35,0], [0.25,0], [0.25,0.5], [0.45,0.5], [0.45,0.85], [0.05,0.85], [0.05,0.6], [0.05,0.85], [0.45,0.85], [0.45,0.5], [0.25,0.5], [0.25,0], [0,0]] },
+                '\'': { width: 0.3, path: [[0,0], [0.1,0], [0.1,0.5], [0,0.85], [0.2,0.85], [0.1,0.5], [0.1,0], [0,0]] },
+                '"': { width: 0.4, path: [[0,0], [0.1,0], [0.1,0.5], [0,0.85], [0.15,0.85], [0.1,0.5], [0.25,0.5], [0.15,0.85], [0.3,0.85], [0.25,0.5], [0.1,0.5], [0.1,0], [0,0]] },
+                ' ': { width: 0.35, path: [] }
+            };
+
+            static getGlyph(char) {
+                return this.GLYPHS[char.toLowerCase()] || { width: 0.35, path: [] };
+            }
+        }
+
+        class DuneWeaverPipeline {
+            constructor(maxRadius = 0.92) {
+                this.maxRadius = maxRadius;
+                this.cartesianPath = [];
+                this.finalPolarPath = [];
+                this.appliedScaleFactor = 1.0;
+            }
+
+            smartWordWrap(text, maxChars = 14) {
+                let words = text.split(' ');
+                let lines = [], currentLine = [];
+                let currCount = 0;
+                for (let word of words) {
+                    if (word.includes('\n')) {
+                        let parts = word.split('\n');
+                        currentLine.push(parts[0]); lines.push(currentLine.join(' '));
+                        currentLine = [parts[1]]; currCount = parts[1].length;
+                    } else if (currCount + word.length + (currentLine.length ? 1 : 0) > maxChars) {
+                        lines.push(currentLine.join(' ')); currentLine = [word]; currCount = word.length;
+                    } else {
+                        currentLine.push(word); currCount += word.length + 1;
+                    }
+                }
+                if (currentLine.length) lines.push(currentLine.join(' '));
+                return lines.join('\n');
+            }
+
+            buildGeometry(text, mode = "centered") {
+                if (["circle", "spiral", "sinewave", "ellipse", "petal", "peanut", "squircle"].includes(mode)) {
+                    text = text.replace(/\n/g, " ");
+                } else {
+                    text = this.smartWordWrap(text, 15);
+                }
+
+                let lines = text.split('\n');
+                let maxLineLen = Math.max(...lines.map(l => l.length), 1);
+                let numLines = lines.length;
+                let baseHeight = 0.16;
+
+                // Suggestion 4: Optimize Math Pow
+                let getParamX = (u, m) => {
+                    if (m === "sinewave") return (u / (2 * Math.PI)) * 1.6 - 0.8;
+                    let ang = -u; 
+                    if (m === "ellipse") return 0.85 * Math.cos(ang);
+                    if (m === "petal") return (0.65 + 0.08 * Math.cos(5 * ang)) * Math.cos(ang);
+                    if (m === "peanut") return (0.60 + 0.25 * Math.cos(2 * ang)) * Math.cos(ang);
+                    if (m === "squircle") {
+                        let s = Math.sin(2 * ang);
+                        return 0.8 * (1 - 0.15 * (s * s)) * Math.cos(ang);
+                    }
+                };
+                
+                let getParamY = (u, m) => {
+                    if (m === "sinewave") return 0.32 * Math.sin(5.0 * ((u / (2 * Math.PI)) * 1.6 - 0.8));
+                    let ang = -u;
+                    if (m === "ellipse") return 0.45 * Math.sin(ang);
+                    if (m === "petal") return (0.65 + 0.08 * Math.cos(5 * ang)) * Math.sin(ang);
+                    if (m === "peanut") return (0.60 + 0.25 * Math.cos(2 * ang)) * Math.sin(ang);
+                    if (m === "squircle") {
+                        let s = Math.sin(2 * ang);
+                        return 0.8 * (1 - 0.15 * (s * s)) * Math.sin(ang);
+                    }
+                };
+
+                let charHeight = baseHeight;
+                let scaleFactorX = charHeight * 1.1; 
+                let lineSpacing = charHeight * 1.65;
+                let charSpacingGap = charHeight * 0.35; 
+                let stiltHeight = charHeight * 0.15; 
+                let circleRadius = 0.60;
+                let spiralRawSum = 0;
+
+                let totalArcLengthParam = 0;
+                let tValsParam = [];
+                let arcLengthsParam = [];
+
+                if (["sinewave", "ellipse", "petal", "peanut", "squircle"].includes(mode)) {
+                    let curveSteps = 1000;
+                    
+                    let tStartParam = 0; 
+                    let tEndParam = 2 * Math.PI;
+                    let dtCurve = (tEndParam - tStartParam) / curveSteps;
+                    
+                    arcLengthsParam.push(0);
+                    tValsParam.push(tStartParam);
+
+                    for (let i = 1; i <= curveSteps; i++) {
+                        let t0 = tStartParam + (i - 1) * dtCurve;
+                        let t1 = tStartParam + i * dtCurve;
+                        let x0 = getParamX(t0, mode); let y0 = getParamY(t0, mode);
+                        let x1 = getParamX(t1, mode); let y1 = getParamY(t1, mode);
+                        
+                        let dx = x1 - x0;
+                        let dy = y1 - y0;
+                        totalArcLengthParam += Math.sqrt((dx * dx) + (dy * dy));
+                        
+                        arcLengthsParam.push(totalArcLengthParam);
+                        tValsParam.push(t1);
+                    }
+
+                    let paramRawSum = 0;
+                    for (let char of text) {
+                        paramRawSum += ProportionalRetracedFont.getGlyph(char).width * 1.1 + 0.35;
+                    }
+                    paramRawSum -= 0.35; 
+                    if (mode !== "sinewave") paramRawSum += 1.0; 
+
+                    charHeight = totalArcLengthParam / paramRawSum;
+                    if (charHeight > 0.25) charHeight = 0.25; 
+                    
+                    scaleFactorX = charHeight * 1.1; 
+                    charSpacingGap = charHeight * 0.35; 
+                    stiltHeight = charHeight * 0.15; 
+                } else if (mode === "circle") {
+                    let circleRawSum = 0;
+                    for (let char of text) {
+                        circleRawSum += ProportionalRetracedFont.getGlyph(char).width * 1.1 + 0.35;
+                    }
+                    charHeight = (2 * Math.PI * this.maxRadius) / (circleRawSum + 2 * Math.PI);
+                    if (charHeight > 0.32) charHeight = 0.32; 
+                    circleRadius = this.maxRadius - charHeight;
+                    scaleFactorX = charHeight * 1.1; 
+                    charSpacingGap = charHeight * 0.35; 
+                    stiltHeight = charHeight * 0.15;
+                } else if (mode === "spiral") {
+                    for (let char of text) {
+                        spiralRawSum += ProportionalRetracedFont.getGlyph(char).width * 1.1 + 0.35;
+                    }
+                    let r_max = this.maxRadius;
+                    let r_min_target = 0.25; 
+                    let sqHeight = (Math.PI * ((r_max * r_max) - (r_min_target * r_min_target))) / (2.5 * spiralRawSum);
+                    charHeight = Math.sqrt(sqHeight);
+                    if (charHeight > 0.35) charHeight = 0.35;
+                    scaleFactorX = charHeight * 1.1;
+                    charSpacingGap = charHeight * 0.35;
+                    stiltHeight = charHeight * 0.15;
+                } else {
+                    if (numLines === 1) {
+                        baseHeight = maxLineLen <= 5 ? 0.30 : (maxLineLen <= 9 ? 0.20 : 0.14);
+                    } else {
+                        baseHeight = numLines >= 4 ? 0.08 : (numLines === 3 ? 0.10 : 0.13);
+                    }
+                    lines = lines.map(l => " " + l + " ");
+                    charHeight = baseHeight;
+                    scaleFactorX = charHeight * 1.1; 
+                    lineSpacing = charHeight * 1.65;
+                    charSpacingGap = charHeight * 0.35; 
+                    stiltHeight = charHeight * 0.15;
+                }
+
+                this.cartesianPath = [];
+                let rawRibbon = [];
+
+                if (mode === "centered") {
+                    for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+                        let line = lines[lineIdx];
+                        let currentLineY = -lineIdx * lineSpacing;
+                        let baseLineY = currentLineY - stiltHeight;
+                        
+                        let totalLineWidth = 0;
+                        for (let i = 0; i < line.length; i++) {
+                            let glyphData = ProportionalRetracedFont.getGlyph(line[i]);
+                            totalLineWidth += (glyphData.width * scaleFactorX);
+                            if (i < line.length - 1) totalLineWidth += charSpacingGap;
+                        }
+
+                        let currentX = -totalLineWidth / 2.0;
+
+                        for (let i = 0; i < line.length; i++) {
+                            let char = line[i];
+                            let glyphData = ProportionalRetracedFont.getGlyph(char);
+                            let gw = glyphData.width * scaleFactorX;
+
+                            let currentScaleY = charHeight;
+                            let currentScaleX = scaleFactorX;
+                            let transX = currentX;
+
+                            if (glyphData.path.length > 0) {
+                                let entryPointX = transX + (glyphData.path[0][0] * currentScaleX);
+                                
+                                this.cartesianPath.push([entryPointX, baseLineY]);
+                                
+                                for (let pt of glyphData.path) {
+                                    this.cartesianPath.push([transX + (pt[0] * currentScaleX), currentLineY + (pt[1] * currentScaleY)]);
+                                }
+                                
+                                let exitPointX = transX + (glyphData.path[glyphData.path.length - 1][0] * currentScaleX);
+                                
+                                this.cartesianPath.push([exitPointX, baseLineY]);
+                                this.cartesianPath.push([transX + gw, baseLineY]);
+                            } else {
+                                this.cartesianPath.push([transX, baseLineY]);
+                                this.cartesianPath.push([transX + gw, baseLineY]);
+                            }
+                            currentX += gw + charSpacingGap;
+                        }
+
+                        if (lineIdx < lines.length - 1) {
+                            let nextLine = lines[lineIdx + 1];
+                            let nextTotalWidth = 0;
+                            for (let i = 0; i < nextLine.length; i++) {
+                                let glyphData = ProportionalRetracedFont.getGlyph(nextLine[i]);
+                                nextTotalWidth += (glyphData.width * scaleFactorX);
+                                if (i < nextLine.length - 1) nextTotalWidth += charSpacingGap;
+                            }
+                            let nextStartX = -nextTotalWidth / 2.0;
+
+                            this.cartesianPath.push([currentX - charSpacingGap, baseLineY]);
+                            let nextBaseLineY = -(lineIdx + 1) * lineSpacing - stiltHeight;
+                            this.cartesianPath.push([currentX - charSpacingGap, nextBaseLineY]);
+                            this.cartesianPath.push([nextStartX, nextBaseLineY]);
+                        }
+                    }
+                    
+                    if (this.cartesianPath.length) {
+                        let yVals = this.cartesianPath.map(p => p[1]);
+                        let yOffset = -((Math.min(...yVals) + Math.max(...yVals)) / 2.0);
+                        this.cartesianPath = this.cartesianPath.map(p => [p[0], p[1] + yOffset]);
+                    }
+                } else {
+                    let totalRibbonWidth = 0;
+                    let ribbonDataMap = [];
+                    for (let char of text) {
+                        let glyphData = ProportionalRetracedFont.getGlyph(char);
+                        ribbonDataMap.push({ char, width: glyphData.width * scaleFactorX });
+                        totalRibbonWidth += (glyphData.width * scaleFactorX) + charSpacingGap;
+                    }
+
+                    let accumulatedX = 0.0;
+                    for (let item of ribbonDataMap) {
+                        let glyphData = ProportionalRetracedFont.getGlyph(item.char);
+                        let baseLineY = -stiltHeight; 
+                        
+                        if (glyphData.path.length > 0) {
+                            let entryX = accumulatedX + (glyphData.path[0][0] * scaleFactorX);
+                            
+                            rawRibbon.push([entryX, baseLineY]);
+                            
+                            for (let pt of glyphData.path) {
+                                rawRibbon.push([accumulatedX + (pt[0] * scaleFactorX), pt[1] * charHeight]);
+                            }
+                            
+                            let exitX = accumulatedX + (glyphData.path[glyphData.path.length - 1][0] * scaleFactorX);
+                            
+                            rawRibbon.push([exitX, baseLineY]);
+                            rawRibbon.push([accumulatedX + item.width, baseLineY]);
+                        } else {
+                            rawRibbon.push([accumulatedX, baseLineY]);
+                            rawRibbon.push([accumulatedX + item.width, baseLineY]);
+                        }
+                        accumulatedX += item.width + charSpacingGap;
+                    }
+
+                    let totalLen = accumulatedX > 0 ? accumulatedX : 1.0;
+
+                    if (mode === "circle") {
+                        let gapStart = accumulatedX;
+                        let gapEnd = 2 * Math.PI * circleRadius;
+                        let gapSteps = Math.max(10, Math.floor((gapEnd - gapStart) / 0.1));
+                        for (let i = 0; i <= gapSteps; i++) {
+                            let x = gapStart + (gapEnd - gapStart) * (i / gapSteps);
+                            rawRibbon.push([x, -stiltHeight]);
+                        }
+                        
+                        for (let pt of rawRibbon) {
+                            let angle = (Math.PI / 2) - (pt[0] / circleRadius);
+                            this.cartesianPath.push([(circleRadius + pt[1]) * Math.cos(angle), (circleRadius + pt[1]) * Math.sin(angle)]);
+                        }
+                    } else if (mode === "spiral") {
+                        let trackSpacing = charHeight * 2.5; 
+                        let bTurnGrowth = trackSpacing / (2 * Math.PI);
+                        let actualL = spiralRawSum * charHeight;
+                        let r_min_sq = (this.maxRadius * this.maxRadius) - (actualL * trackSpacing / Math.PI);
+                        let actual_r_min = r_min_sq > 0 ? Math.sqrt(r_min_sq) : 0.25;
+                        let startTheta = actual_r_min / bTurnGrowth;
+                        let maxTheta = this.maxRadius / bTurnGrowth;
+
+                        for (let pt of rawRibbon) {
+                            let thetaSq = (maxTheta * maxTheta) - (2 * pt[0] / bTurnGrowth);
+                            let theta = thetaSq > 0 ? Math.sqrt(thetaSq) : 0;
+                            let baseR = bTurnGrowth * theta;
+                            let angle = (Math.PI / 2) + theta; 
+                            
+                            let tx = -(bTurnGrowth * Math.cos(angle) - baseR * Math.sin(angle));
+                            let ty = -(bTurnGrowth * Math.sin(angle) + baseR * Math.cos(angle));
+                            let mag = Math.sqrt((tx * tx) + (ty * ty));
+                            
+                            let nx = -ty / mag;
+                            let ny = tx / mag;
+
+                            this.cartesianPath.push([
+                                baseR * Math.cos(angle) + pt[1] * nx, 
+                                baseR * Math.sin(angle) + pt[1] * ny
+                            ]);
+                        }
+                    } else if (["sinewave", "ellipse", "petal", "peanut", "squircle"].includes(mode)) {
+                        let startArc = 0;
+                        if (totalLen < totalArcLengthParam) {
+                            startArc = (totalArcLengthParam - totalLen) / 2.0;
+                        }
+
+                        if (mode !== "sinewave") {
+                            let gapStart = accumulatedX;
+                            let gapEnd = totalArcLengthParam;
+                            let gapSteps = Math.max(10, Math.floor((gapEnd - gapStart) / 0.1));
+                            
+                            if (gapEnd > gapStart) {
+                                let traceY = -stiltHeight;
+                                rawRibbon.push([gapStart, traceY]);
+                                for (let i = 0; i <= gapSteps; i++) {
+                                    let x = gapStart + (gapEnd - gapStart) * (i / gapSteps);
+                                    rawRibbon.push([x, traceY]);
+                                }
+                                rawRibbon.push([gapEnd, traceY]);
+                            }
+                        }
+
+                        for (let pt of rawRibbon) {
+                            let targetArc = startArc + pt[0];
+                            if (mode !== "sinewave") {
+                                targetArc = targetArc % totalArcLengthParam;
+                            } else {
+                                if (targetArc > totalArcLengthParam) targetArc = totalArcLengthParam;
+                            }
+                            
+                            let tStartParam = 0; 
+                            let tActual = tStartParam;
+
+                            for (let i = 0; i < arcLengthsParam.length - 1; i++) {
+                                if (targetArc >= arcLengthsParam[i] && targetArc <= arcLengthsParam[i+1]) {
+                                    let frac = (targetArc - arcLengthsParam[i]) / (arcLengthsParam[i+1] - arcLengthsParam[i]);
+                                    tActual = tValsParam[i] + frac * (tValsParam[i+1] - tValsParam[i]);
+                                    break;
+                                }
+                            }
+
+                            let cxBase = getParamX(tActual, mode);
+                            let cyBase = getParamY(tActual, mode);
+
+                            let dt = 0.05; 
+                            let cx_next = getParamX(tActual + dt, mode);
+                            let cy_next = getParamY(tActual + dt, mode);
+                            let cx_prev = getParamX(tActual - dt, mode);
+                            let cy_prev = getParamY(tActual - dt, mode);
+
+                            let dx = cx_next - cx_prev;
+                            let dy = cy_next - cy_prev;
+                            let mag = Math.sqrt((dx * dx) + (dy * dy)) || 0.001;
+                            
+                            let nx = -dy / mag;
+                            let ny = dx / mag;
+
+                            this.cartesianPath.push([cxBase + pt[1] * nx, cyBase + pt[1] * ny]);
+                        }
+                    }
+                }
+
+                if (this.cartesianPath.length) {
+                    let maxRadiusDetected = Math.max(...this.cartesianPath.map(pt => Math.sqrt((pt[0] * pt[0]) + (pt[1] * pt[1]))));
+                    if (maxRadiusDetected > this.maxRadius) {
+                        this.appliedScaleFactor = this.maxRadius / maxRadiusDetected;
+                        this.cartesianPath = this.cartesianPath.map(pt => [pt[0] * this.appliedScaleFactor, pt[1] * this.appliedScaleFactor]);
+                    } else {
+                        this.appliedScaleFactor = 1.0;
+                    }
+                }
+            }
+
+            processPipeline() {
+                this.finalPolarPath = [];
+                let lastTheta = 0.0;
+
+                if (!this.cartesianPath.length) return;
+
+                let [txtStartX, txtStartY] = this.cartesianPath[0];
+                let targetTheta = Math.atan2(txtStartY, txtStartX);
+                let targetRho = Math.sqrt((txtStartX * txtStartX) + (txtStartY * txtStartY));
+
+                this.finalPolarPath.push([targetTheta, targetRho]);
+                lastTheta = targetTheta;
+
+                let denseCartesian = [];
+                for (let i = 0; i < this.cartesianPath.length - 1; i++) {
+                    let p1 = this.cartesianPath[i], p2 = this.cartesianPath[i+1];
+                    let dist = Math.sqrt(((p2[0]-p1[0]) * (p2[0]-p1[0])) + ((p2[1]-p1[1]) * (p2[1]-p1[1])));
+                    let steps = Math.max(2, Math.floor(dist * 350));
+                    for (let s = 0; s < steps; s++) {
+                        denseCartesian.push([p1[0] + (s/steps)*(p2[0]-p1[0]), p1[1] + (s/steps)*(p2[1]-p1[1])]);
+                    }
+                }
+                if (this.cartesianPath.length) denseCartesian.push(this.cartesianPath[this.cartesianPath.length - 1]);
+
+                for (let pt of denseCartesian) {
+                    let rho = Math.sqrt((pt[0] * pt[0]) + (pt[1] * pt[1]));
+                    let theta = Math.atan2(pt[1], pt[0]);
+
+                    while (theta - lastTheta > Math.PI) theta -= 2 * Math.PI;
+                    while (theta - lastTheta < -Math.PI) theta += 2 * Math.PI;
+
+                    let dTheta = theta - lastTheta;
+                    if (rho < 0.15 && Math.abs(dTheta) > 0.08) {
+                        let subSteps = Math.max(2, Math.floor(Math.abs(dTheta) / 0.05));
+                        for (let s = 1; s < subSteps; s++) {
+                            let lastR = this.finalPolarPath[this.finalPolarPath.length - 1][1];
+                            this.finalPolarPath.push([lastTheta + dTheta * (s/subSteps), lastR + (rho - lastR) * (s/subSteps)]);
+                        }
+                    }
+                    this.finalPolarPath.push([theta, rho > 1.0 ? 1.0 : rho]);
+                    lastTheta = theta;
+                }
+            }
+        }
+
+        let pipelineInstance = new DuneWeaverPipeline();
+        let streamingTimer = null; 
+        let streamIndex = 0;
+
+        const STORAGE_KEY_STATE = 'text_state';
+        const STORAGE_KEY_SAVED = 'text_saved';
+        
+        let pendingRenderFrame = null;
+
+        // Suggestion 2 & 5: High-DPI scaling with requestAnimationFrame
+        function renderSandVirtualTwin(polarPath) {
+            if (pendingRenderFrame) cancelAnimationFrame(pendingRenderFrame);
+
+            pendingRenderFrame = requestAnimationFrame(() => {
+                const canvas = document.getElementById('sandCanvas');
+                const ctx = canvas.getContext('2d');
+                
+                // High-DPI Scaling Setup
+                const dpr = window.devicePixelRatio || 1;
+                // Since css is width: 100% and max-width 560px, grab current rect
+                const rect = canvas.parentElement.getBoundingClientRect();
+                const size = rect.width; 
+
+                canvas.width = size * dpr;
+                canvas.height = size * dpr;
+                
+                // Reset transform & clear
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                ctx.scale(dpr, dpr);
+                ctx.fillStyle = "#d9b48f"; 
+                ctx.fillRect(0, 0, size, size);
+                
+                if (!polarPath || !polarPath.length) return;
+                
+                const center = size / 2;
+                const scale = center * 0.94;
+                
+                let pts = polarPath.map(pt => [
+                    center + pt[1] * Math.cos(pt[0]) * scale, 
+                    center - pt[1] * Math.sin(pt[0]) * scale
+                ]);
+                
+                ctx.lineCap = "round"; 
+                ctx.lineJoin = "round";
+
+                ctx.strokeStyle = "rgba(255, 226, 196, 0.12)"; ctx.lineWidth = 12 * (size/560); ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
+                for(let i=1; i<pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]); ctx.stroke();
+                
+                ctx.strokeStyle = "rgba(140, 107, 73, 0.25)"; ctx.lineWidth = 8 * (size/560); ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
+                for(let i=1; i<pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]); ctx.stroke();
+                
+                ctx.strokeStyle = "rgba(102, 77, 49, 0.45)"; ctx.lineWidth = 3.5 * (size/560); ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
+                for(let i=1; i<pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]); ctx.stroke();
+                
+                ctx.strokeStyle = "rgba(74, 51, 25, 0.85)"; ctx.lineWidth = 1.0 * (size/560); ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
+                for(let i=1; i<pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]); ctx.stroke();
+            });
+        }
+
+        function updateCompilation(saveState = true) {
+            let inputEl = document.getElementById('text-input');
+            let mode = document.getElementById('mode-select').value;
+            let filename = document.getElementById('filename-input').value || "text_layout";
+
+            let rawText = inputEl.value;
+            if (["circle", "spiral", "sinewave", "ellipse", "petal", "peanut", "squircle"].includes(mode)) {
+                rawText = rawText.replace(/[\r\n]+/g, " ");
+            } else {
+                rawText = rawText.replace(/\r\n/g, "\n");
+            }
+            
+            rawText = rawText.replace(/[^a-zA-Z0-9\s\n!@#$%^&*().,?'"+\-]/g, "");
+            if (!rawText.trim()) rawText = "testing";
+
+            pipelineInstance.buildGeometry(rawText, mode);
+            pipelineInstance.processPipeline();
+
+            let nodesCount = pipelineInstance.finalPolarPath.length;
+            let initialTh = pipelineInstance.finalPolarPath[0] ? pipelineInstance.finalPolarPath[0][0] : 0;
+            let finalTh = pipelineInstance.finalPolarPath[pipelineInstance.finalPolarPath.length - 1] ? pipelineInstance.finalPolarPath[pipelineInstance.finalPolarPath.length - 1][0] : 0;
+            let totalRevs = Math.abs(finalTh - initialTh) / (2 * Math.PI);
+
+            document.getElementById('tel-nodes').innerText = `${nodesCount} nodes`;
+            document.getElementById('tel-revs').innerText = `${totalRevs.toFixed(1)} turns`;
+            
+            let scaleValEl = document.getElementById('tel-scale');
+            if (pipelineInstance.appliedScaleFactor < 1.0) {
+                scaleValEl.innerHTML = `<span style="color:#ffbc6b;">Auto-Fit (${Math.floor(pipelineInstance.appliedScaleFactor * 100)}%)</span>`;
+            } else {
+                scaleValEl.innerHTML = `<span style="color:#7cd97c;">Optimum (100%)</span>`;
+            }
+
+            renderSandVirtualTwin(pipelineInstance.finalPolarPath);
+            if (saveState) localStorage.setItem(STORAGE_KEY_STATE, JSON.stringify({ rawText: inputEl.value, mode, filename }));
+        }
+
+        // Suggestion 1: Debounce function to prevent UI lockup on rapid typing
+        function debounce(func, wait) {
+            let timeout;
+            return function(...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+
+        const debouncedUpdate = debounce(() => updateCompilation(true), 250);
+
+        function getThrString() {
+            return pipelineInstance.finalPolarPath.map(pt => `${pt[0].toFixed(5)} ${pt[1].toFixed(5)}`).join('\n') + '\n';
+        }
+
+        function triggerFileDownload() {
+            let n = (document.getElementById('filename-input').value || 'text_layout').replace(/[^a-zA-Z0-9_\-]/g, '');
+            let blob = new Blob([getThrString()], { type: "text/plain;charset=utf-8" });
+            let a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `${n}.thr`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        }
+
+        async function uploadToController() {
+            const statusBanner = document.getElementById('status-banner');
+            let rawName = document.getElementById('filename-input').value || 'text_layout';
+            let filename = `${rawName.replace(/[^a-zA-Z0-9_\-]/g, '')}.thr`;
+            statusBanner.style.color = "var(--accent-gold-light)"; statusBanner.innerText = "📤 Saving track layout directly to table storage...";
+
+            try {
+                let formData = new FormData();
+                formData.append('file', new Blob([getThrString()], { type: 'text/plain' }), filename);
+                
+                let response = await fetch('/api/upload_theta_rho', { method: 'POST', body: formData });
+                if (response.ok) {
+                    statusBanner.style.color = "#7cd97c"; statusBanner.innerText = `✅ Pattern saved directly as '${filename}'!`;
+                    saveToHistory(rawName, document.getElementById('text-input').value, document.getElementById('mode-select').value);
+                    setTimeout(() => { statusBanner.innerText = ""; }, 4000);
+                } else { throw new Error(); }
+            } catch (e) {
+                statusBanner.style.color = "#ff6b6b"; statusBanner.innerText = "❌ Path error. Running standalone off-network? Use 'Download THR'.";
+            }
+        }
+
+        // Adapted for live variable feedrate (Suggestion 12)
+        function toggleLiveStreaming() {
+            const btn = document.getElementById('stream-btn'); 
+            const statusBanner = document.getElementById('status-banner');
+            
+            if (streamingTimer) {
+                clearTimeout(streamingTimer); 
+                streamingTimer = null;
+                btn.innerText = "🎮 Stream Live to Gantry"; 
+                btn.classList.remove('streaming');
+                statusBanner.innerText = "⏹️ Pi UART hardware stream interrupted."; 
+                return;
+            }
+            if (!pipelineInstance.finalPolarPath.length) return;
+            
+            streamIndex = 0; 
+            btn.innerText = "🛑 Abort Streaming"; 
+            btn.classList.add('streaming');
+            statusBanner.style.color = "var(--accent-gold-light)"; 
+            statusBanner.innerText = "⚡ Initializing Raspberry Pi UART pipeline transmission...";
+
+            const streamNextStep = async () => {
+                if (streamIndex >= pipelineInstance.finalPolarPath.length) {
+                    clearTimeout(streamingTimer); streamingTimer = null;
+                    btn.innerText = "🎮 Stream Live to Gantry"; btn.classList.remove('streaming');
+                    statusBanner.style.color = "#7cd97c"; statusBanner.innerText = "🏁 Completed! The Pi has finished streaming coordinates to the gantry."; 
+                    return;
+                }
+                
+                let [theta, rho] = pipelineInstance.finalPolarPath[streamIndex];
+                try {
+                    await fetch(`/api/stream_step?theta=${theta.toFixed(5)}&rho=${rho.toFixed(5)}`, { method: 'GET' });
+                    statusBanner.innerText = `⚡ Pi UART Stream: node index ${streamIndex} / ${pipelineInstance.finalPolarPath.length}`;
+                    streamIndex++;
+                    
+                    // Fetch dynamic speed from slider for next tick
+                    let msSpeed = parseInt(document.getElementById('speed-slider').value, 10);
+                    streamingTimer = setTimeout(streamNextStep, msSpeed);
+                    
+                } catch (err) {
+                    clearTimeout(streamingTimer); streamingTimer = null;
+                    btn.innerText = "🎮 Stream Live to Gantry"; btn.classList.remove('streaming');
+                    statusBanner.style.color = "#ff6b6b"; statusBanner.innerText = "❌ Pi serial stream dropped.";
+                }
+            };
+            
+            // Kick off stream
+            streamNextStep();
+        }
+
+        function saveToHistory(label, text, mode) {
+            let saved = JSON.parse(localStorage.getItem(STORAGE_KEY_SAVED) || '[]');
+            saved = saved.filter(item => item.label !== label); saved.unshift({ label, text, mode });
+            if (saved.length > 3) saved.pop();
+            localStorage.setItem(STORAGE_KEY_SAVED, JSON.stringify(saved)); renderHistoryList();
+        }
+
+        function renderHistoryList() {
+            let saved = JSON.parse(localStorage.getItem(STORAGE_KEY_SAVED) || '[]'); const listEl = document.getElementById('history-list'); listEl.innerHTML = '';
+            if (!saved.length) { listEl.innerHTML = '<li style="font-size:0.8rem; opacity:0.4; padding:4px 0;">No logs cached.</li>'; return; }
+            saved.forEach(item => {
+                let li = document.createElement('li'); li.className = 'history-item';
+                li.innerHTML = `<span>${item.label}</span><span class="item-mode">${item.mode}</span>`;
+                li.onclick = () => {
+                    document.getElementById('text-input').value = item.text; document.getElementById('mode-select').value = item.mode;
+                    document.getElementById('filename-input').value = item.label;
+                    updateCompilation(true);
+                };
+                listEl.appendChild(li);
+            });
+        }
+
+        function loadSavedState() {
+            let state = JSON.parse(localStorage.getItem(STORAGE_KEY_STATE));
+            if (state) {
+                document.getElementById('text-input').value = state.rawText || "testing";
+                document.getElementById('mode-select').value = state.mode || "centered";
+                document.getElementById('filename-input').value = state.filename || "testing";
+            }
+            renderHistoryList();
+        }
+
+        document.getElementById('text-input').addEventListener('input', debouncedUpdate);
+        document.getElementById('filename-input').addEventListener('input', debouncedUpdate);
+        document.getElementById('mode-select').addEventListener('change', () => updateCompilation(true));
+        
+        // Feedrate slider listener
+        document.getElementById('speed-slider').addEventListener('input', (e) => {
+            document.getElementById('speed-val').innerText = `${e.target.value}ms`;
+        });
+
+        // Handle window resizes for the canvas
+        window.addEventListener('resize', debounce(() => renderSandVirtualTwin(pipelineInstance.finalPolarPath), 150));
+
+        document.getElementById('export-btn').addEventListener('click', triggerFileDownload);
+        document.getElementById('save-btn').addEventListener('click', uploadToController);
+        document.getElementById('stream-btn').addEventListener('click', toggleLiveStreaming);
+
+        window.onload = () => { loadSavedState(); updateCompilation(false); };
+    </script>
+</body>
+</html>
 
