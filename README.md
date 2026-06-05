@@ -8,13 +8,13 @@ To protect your files from being wiped out during system updates, your custom so
 
 ## 📁 Repository & System Architecture
 
-Dune Weaver runs natively on the Raspberry Pi as a Linux `systemd` background service managed by the root execution script wrapper `./dw`. 
+Dune Weaver runs natively on the Raspberry Pi as a Linux `systemd` background service managed by the root execution script wrapper `./dw`.
 
 * **The React Frontend Interface:** Housed inside `~/dune-weaver/frontend/`. It must be compiled using Node/Vite (`npm run build`) whenever UI configurations are altered.
 * **The Static Workspace:** Housed inside `~/dune-weaver/static/`. This directory serves production assets to the FastAPI Python backend server. This folder is completely wiped and regenerated during a frontend compilation or a software update.
 * **The Safe Asset Vault:** Housed inside `~/my-custom-tools/`. This folder holds your standalone `text.html` page and a complete backup copy of your modified `Layout.tsx` file, isolating them from upstream Git repository cleanups.
 
-```
+```text
 ~ (Home Directory)
 ├── my-custom-tools/                  <-- [SAFE VAULT] Persistent Custom Files
 │   ├── text.html                     <-- Standalone Canvas Utility (Text Compiler)
@@ -34,42 +34,55 @@ Dune Weaver runs natively on the Raspberry Pi as a Linux `systemd` background se
 Follow these steps if you are setting up this custom menu modification for the first time on an existing Dune Weaver environment over SSH.
 
 ### Step 1.1: Create the Safe Vault and Store Assets
+
 Log into your Raspberry Pi over SSH and create the protected folder outside of the repository path:
+
 ```bash
 mkdir -p ~/my-custom-tools
 ```
-Place your custom canvas utility file (`text.html`) and the modified layout component file (`Layout.tsx`) into this directory. 
+
+Place your custom canvas utility file (`text.html`) and the modified layout component file (`Layout.tsx`) into this directory.
 
 *(If you are creating them via terminal, run `nano ~/my-custom-tools/text.html` and `nano ~/my-custom-tools/Layout.tsx`, paste the respective code blocks, then save with `Ctrl+O` and exit with `Ctrl+X`).*
 
 ### Step 1.2: Swap the Layout File into the Core Application Space
+
 Overwrite the default repository layout file with your custom version:
+
 ```bash
 cp /home/pi/my-custom-tools/Layout.tsx /home/pi/dune-weaver/frontend/src/components/layout/Layout.tsx
 ```
-> [!NOTE]
-> If your Raspberry Pi user account is not named `pi`, replace `/home/pi/` with your exact home path across all commands in this guide.
+
+> **Note:** If your Raspberry Pi user account is not named `pi`, replace `/home/pi/` with your exact home path across all commands in this guide.
 
 ### Step 1.3: Compile the Frontend Framework
+
 Navigate into the frontend code boundary and trigger the production Vite compiler:
+
 ```bash
 cd ~/dune-weaver/frontend
 npm run build
 ```
+
 Clear out any stale production bundles and sync the compiled static files into the web server workspace:
+
 ```bash
 rm -rf ../static/*
 cp -r dist/* ../static/
 ```
 
 ### Step 1.4: Inject the Symbolic Link Portal
+
 Create a Linux Symbolic Link (Symlink). This creates an automated virtual shortcut inside the backend folder pointing directly back to your persistent source asset:
+
 ```bash
 ln -s /home/pi/my-custom-tools/text.html /home/pi/dune-weaver/static/text.html
 ```
 
 ### Step 1.5: Reboot the System Service
+
 Head back to the root project directory and restart the native systemd service script wrapper to flush the application cache:
+
 ```bash
 cd ~/dune-weaver
 ./dw restart
@@ -98,7 +111,7 @@ npm run build
 rm -rf ../static/*
 cp -r dist/* ../static/
 
-# 5. Restore the symbolic shortcut link portal for text.html
+# 5. Recreate the Symlink for text.html
 ln -s /home/pi/my-custom-tools/text.html /home/pi/dune-weaver/static/text.html
 
 # 6. Exit back to the root folder and restart the system background service
@@ -110,21 +123,21 @@ cd ..
 
 ## 📝 Section 3: Reference Documentation for text.html (Dune Weaver Text Compiler)
 
-A unified, browser-based serial interface and text-to-path compiler for kinetic sand tables. This tool translates standard alphanumeric text into continuous, machine-ready Theta-Rho (`.thr`) coordinate paths. 
+A unified, browser-based serial interface and text-to-path compiler for kinetic sand tables. This tool translates standard alphanumeric text into continuous, machine-ready Theta-Rho (`.thr`) coordinate paths.
 
 It includes a custom single-stroke proportional font engine and a parametric math pipeline capable of wrapping text around complex geometric profiles like Archimedean spirals, concentric circles, and Cassini peanuts.
 
 ### Features
 * **Custom Pathing Engine:** Transforms strings into continuous vectors using a custom retraced proportional font, minimizing gantry travel time and eliminating sand drags between characters.
 * **Complex Geometric Projections:** Projects flat text along various parametric curves:
-  * Centered Block Stack
-  * Concentric Circular Ring Bend
-  * Continuous Archimedean Spiral Wrap
-  * Rolling Sine Wave Horizontal Ribbon
-  * The Gentle Ellipse
-  * The Soft Petal (5-Ripple)
-  * The Cassini Peanut
-  * The Perimeter Squircle
+	+ Centered Block Stack
+	+ Concentric Circular Ring Bend
+	+ Continuous Archimedean Spiral Wrap
+	+ Rolling Sine Wave Horizontal Ribbon
+	+ The Gentle Ellipse
+	+ The Soft Petal (5-Ripple)
+	+ The Cassini Peanut
+	+ The Perimeter Squircle
 * **Live Virtual Twin:** Real-time, Retina-ready HTML5 Canvas rendering of the calculated sand path.
 * **Pi Telemetry Dashboard:** Tracks vector output nodes, calculated font scale, and rotational matrix loops.
 * **Direct Hardware Interfacing:** Streams coordinates directly to a Raspberry Pi serial interface (via UART endpoint) with adjustable millisecond feedrates, or saves the `.thr` file directly to the controller's storage.
@@ -132,54 +145,97 @@ It includes a custom single-stroke proportional font engine and a parametric mat
 
 ### Project Structure
 The entire application is currently contained within a single `text.html` file, which includes:
-1.  **`ProportionalRetracedFont`:** A static dictionary containing the vector spline data for all supported alphanumeric characters and symbols.
-2.  **`DuneWeaverPipeline`:** The core mathematical engine that handles word-wrapping, arc-length parameterization, curve projection, and cartesian-to-polar coordinate transformations.
-3.  **UI Controller:** Handles local storage state caching, debounced user inputs, and network requests (`fetch`) to the local motor controller backend.
+1. **`ProportionalRetracedFont`:** A static dictionary containing the vector spline data for all supported alphanumeric characters and symbols.
+2. **`DuneWeaverPipeline`:** The core mathematical engine that handles word-wrapping, arc-length parameterization, curve projection, and cartesian-to-polar coordinate transformations.
+3. **UI Controller:** Handles local storage state caching, debounced user inputs, and network requests (`fetch`) to the local motor controller backend.
 
-### Usage
+### 🚀 Quick Start & Usage Modes
+
 #### Standalone Mode (No Hardware)
-1. Open `text.html` in any modern web browser.
-2. Enter your text, select a geometric profile, and view the generated path.
-3. Click **Download THR** to save the Theta-Rho file to your local machine.
+1. **Load a Font:** Drag and drop an `.svg` or `.json` font file directly onto the window, or click **📂 Load Font** in the top right.
+2. **Enter Text:** Type your desired message in the **Message Payload** text box.
+3. **Select a Projection:** Choose a mathematical shape from the **Geometric Projection** dropdown.
+4. **Preview:** The canvas on the right will automatically compile and display your toolpath. 
+5. **Export:** Click **💾 Download .THR** to save the file locally.
 
 #### Networked/Raspberry Pi Mode
-To use the **Save to Table** and **Stream Live to Gantry** buttons, the `text.html` file must be served from (or proxied to) a backend controller (like a Raspberry Pi running a Python/Node.js web server) that exposes the following endpoints:
+To use the **Save Direct to Table** button (or Stream Live to Gantry), the `text.html` file must be served from (or proxied to) a backend controller (like a Raspberry Pi running a Python/Node.js web server) that exposes the following endpoints:
 * `POST /api/upload_theta_rho`: Accepts a `.thr` file payload and saves it to the table's local directory.
 * `GET /api/stream_step?theta={val}&rho={val}`: Accepts discrete coordinates and relays them via UART/Serial to the motor drivers.
 
-### Roadmap & Future Enhancements
-* Implementation of the native browser Web Serial API for direct USB-to-Controller communication, bypassing the need for a backend network relay.
-* Stream acknowledgment (ACK) handshakes to prevent the buffer from out-pacing the physical stepper motors.
-* Splitting the codebase into modular ES6 JavaScript files for easier maintenance.
+### ⚠️ System Warnings & Error States (Red Text)
+Dune Weaver actively monitors your toolpath and hardware limits. If the system detects an issue that will physically fail on the table or block a network transfer, the relevant telemetry, status banner, or canvas will turn **red**.
+* **Red Canvas Toolpaths:** If the drawn text in the Virtual Twin preview turns red instead of natural sand colors, it means the physical ball diameter is too wide for the current text scale. The ball will physically overlap its own path and erase the cursive loops. *Fix: Type fewer words to allow Auto-Fit to scale the text up, manually increase scale, or specify a smaller Ball Dia.*
+* **POOR (Loops Erased):** Located in the Telemetry Dashboard under *Physics Legibility*. This is the text-based UI warning corresponding to the red canvas toolpaths above.
+* **⚠️ INT32 ROLLOVER:** Located in the Telemetry Dashboard next to *Path Rotations*. If a single continuous toolpath exceeds 1,000 full rotations, it risks overflowing the 32-bit integer limit on certain GRBL/MKS DLC32 firmware versions, causing the table to freeze or crash. *Fix: Break the text into smaller batches or reduce the total length.*
+* **Font Blocked / Compilation Error:** Appears in the main Status Banner. Occurs if the local font fails to fetch, or if a manually uploaded SVG/JSON has broken syntax that the kinematics engine cannot parse. 
+* **Upload Errors (Timeout / CORS / Offline):** Appears in the main Status Banner when attempting to push directly to the table. If the controller is turned off, the IP address in the **Controller API** field is incorrect, or your browser blocks the local network request, the banner will flash red with the specific HTTP or Network error.
+
+### 🎛️ User Interface Overview
+The interface is divided into two primary sections: the **Control Dashboard** (left) and the **Virtual Twin Preview** (right).
+
+#### The Control Dashboard
+This panel houses all variables related to layout, hardware specifications, and toolpath optimization.
+* **Pattern Name:** Sets the filename for your exported `.thr` file.
+* **Scaling Strategy:** Controls the overall size of the text. **Auto-Fit** dynamically scales the text to fill your table's maximum radius without clipping the edge.
+
+#### ⚙️ Advanced Tuning & Hardware
+Expand the Advanced Tuning section to match the software engine with your exact physical hardware.
+* **Table Model (mm):** Sets the absolute boundary radius. This acts as a mathematical wall to prevent the mechanism from crashing.
+* **Ball Dia. (mm):** The physical width of your steel ball. Used by the physics engine to calculate legibility and visually simulate sand displacement.
+* **Controller API:** The local IP endpoint of your table (e.g., `http://192.168.1.100:8000`) for direct network uploads.
+* **Word Jump Droop:** When the ball lifts to jump between individual words, this controls the downward gravity/sag of the connecting line. Keep it high for elegant cursive aesthetics.
+* **Perimeter Margin:** Keeps the text away from the absolute edge of the glass (padding).
+* **Character & Line Spacing:** Adjusts kerning (horizontal) and leading (vertical) space.
+* **Wipe Quality:** Controls the density of the center-out flattening spiral if **Prepend Spiral Wipe** is activated.
+* **Context Ligatures:** Automatically swaps specific letter pairings for pre-drawn continuous transitions to avoid awkward overlaps.
+* **Smooth Corners:** Applies Chaikin smoothing to sharp angles in the vector path, ensuring smoother motor velocity.
+
+### 📡 Telemetry Dashboard & Simulation
+Before executing a print, monitor the **Telemetry Dashboard** to ensure your mechanism can handle the toolpath.
+* **Vector Nodes:** The total number of coordinate pairs in the generated `.thr` file.
+* **Path Rotations:** The total number of physical rotations the theta motor must complete. 
+* **Estimated Time:** Calculated based on your specified **Est. Feedrate (ms/pt)**.
+* **Physics Legibility:** A check to ensure your steel ball isn't too large for the tightest details in the generated path.
+
+#### The Virtual Twin
+The canvas provides a 1:1 simulation of the physical table.
+* **Pan & Zoom:** Click and drag to pan around the table. Use your mouse wheel to zoom. Double-click to reset the view.
+* **Simulation Player:** Click **▶ Play** to animate the exact routing path the steel ball will take. You can scrub through time using the slider.
+* **Loupe Tool:** Click **🔎 Loupe** to toggle a magnifying glass over your cursor to inspect vector intersections and ball-width overlap in high detail.
+* **Record:** Click **📼 REC** to capture the simulation as a WebM video file.
+
+### 🛠️ Font Manager & Inspector
+Click **🛠️ Font Manager** in the top header to inspect the active font currently loaded in memory.
+* **Available Glyphs:** Displays every character successfully parsed from your SVG or JSON file.
+* **Kerning Pair Inspector:** Type any two characters (e.g., `o` and `r`) to visually test how the engine mathematically overlaps them.
+
+### ⌨️ Keyboard Shortcuts
+| Shortcut | Action |
+| :--- | :--- |
+| `Ctrl + Enter` | Upload directly to the Controller API. |
+| `Ctrl + S` | Download the `.thr` file locally. |
+| `Spacebar` | Play/Pause the canvas simulation (when not typing in a text field). |
+
+### 🛣️ Roadmap & Future Enhancements
+* Implementation of the native browser Web Serial
 
 ---
 
-## 🛠️ Appendix: Complete Reference Code for Modified `Layout.tsx`
-
-This is the exact full code structure of `frontend/src/components/layout/Layout.tsx`. It contains the explicit navigation array route modification mapping (`/static/text.html`), structural anchor interception tags (`isExternal: true`), and Google Material Symbols configuration.
+## 📄 Appendix: `Layout.tsx` Reference Backup
 
 ```tsx
+import { useEffect, useMemo, useState } from 'react'
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
-import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
-import { toast } from 'sonner'
-import { NowPlayingBar } from '@/components/NowPlayingBar'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Separator } from '@/components/ui/separator'
-import { cacheAllPreviews } from '@/lib/previewCache'
-import { TableSelector } from '@/components/TableSelector'
-import { useTable } from '@/contexts/TableContext'
-import { apiClient } from '@/lib/apiClient'
-import ShinyText from '@/components/ShinyText'
-import { useStatusStore } from '@/stores/useStatusStore'
-import { useCacheProgressStore } from '@/stores/useCacheProgressStore'
+import { useTable } from '@/hooks/use-table'
+import { useStatusStore } from '@/store/status'
+import { NowPlayingBar } from '@/components/layout/now-playing-bar'
 
-// 1. EXTENDED NAVIGATION ITEMS ARRAY
+// 1. MENU REGISTRATION FOR CUSTOM APP COMPONENT
 const navItems = [
-  { path: '/', label: 'Browse', icon: 'grid_view', title: 'Browse Patterns' },
-  { path: '/playlists', label: 'Playlists', icon: 'playlist_play', title: 'Playlists' },
-  { path: '/table-control', label: 'Control', icon: 'tune', title: 'Table Control' },
+  { path: '/', label: 'Library', icon: 'library_music', title: 'Pattern Library' },
+  { path: '/table-control', label: 'Control', icon: 'gamepad', title: 'Manual Control' },
   { path: '/led', label: 'LED', icon: 'lightbulb', title: 'LED Control' },
   // CUSTOM TEXT COMPILER ACTION LINK
   { 
@@ -319,10 +375,10 @@ export function Layout() {
                   key={item.path}
                   to={item.path}
                   className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-foreground'
-                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-50'
-                  }`}
+ isActive
+ ? 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-foreground'
+ : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-50'
+ }`}
                 >
                   <span className="material-symbols-outlined text-lg">{item.icon}</span>
                   <span>{item.label}</span>
