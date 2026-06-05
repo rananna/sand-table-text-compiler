@@ -3,1033 +3,1857 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sand Table Text Compiler</title>
+    <title>Dune Weaver - Kinematic Calligraphy</title>
     <style>
         :root {
-            --bg-dark: #0f0e0d;
-            --panel-bg: #1a1816;
-            --input-bg: #090807;
-            --accent-gold: #c59b4e;
-            --accent-gold-dim: #7c5f2b;
-            --accent-gold-light: #fff0d0;
-            --sand-base: #d9b48f;
-            --text-main: #e6dec9;
-            --text-muted: #8c8273;
-            --btn-green: #255427;
-            --btn-green-hover: #327035;
-            --btn-blue: #1e3a5f;
-            --btn-blue-hover: #2a5282;
-            --border-color: #2d2722;
+            --bg-dark: #0a0a0a; --panel-bg: #151413; --input-bg: #0f0e0d;
+            --accent-gold: #d4af37; --accent-gold-dim: #8b732b; --accent-gold-light: #f3e5ab;
+            --sand-base: #d9b48f; --text-main: #f0ebe1; --text-muted: #847b6e;
+            --btn-green: #255427; --btn-green-hover: #327035; --border-color: #2a2622;
+            --shadow-soft: 0 8px 32px rgba(0,0,0,0.4); --shadow-inner: inset 0 2px 4px rgba(0,0,0,0.2);
         }
-
+        body.theme-light {
+            --bg-dark: #f4f1ea; --panel-bg: #ffffff; --input-bg: #f9f8f6;
+            --accent-gold: #b38234; --accent-gold-dim: #d1b894; --accent-gold-light: #8a6020;
+            --text-main: #2d2722; --text-muted: #736b61; --border-color: #e0dcd3;
+            --shadow-soft: 0 8px 32px rgba(0,0,0,0.05); --shadow-inner: inset 0 2px 4px rgba(0,0,0,0.02);
+        }
+        body.theme-sand {
+            --bg-dark: #d9b48f; --panel-bg: #eeddc5; --input-bg: #e4cdb0;
+            --accent-gold: #8c5a24; --accent-gold-dim: #b8864f; --accent-gold-light: #4a2d0f;
+            --text-main: #4a331c; --text-muted: #7a634a; --border-color: #c9a47f;
+            --sand-base: #f4dcb5; --shadow-soft: 0 8px 32px rgba(92, 57, 24, 0.15);
+            --shadow-inner: inset 0 2px 4px rgba(92, 57, 24, 0.1);
+        }
         body {
-            background-color: var(--bg-dark);
-            color: var(--text-main);
+            background-color: var(--bg-dark); color: var(--text-main);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            margin: 0;
-            padding: 30px 15px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-            box-sizing: border-box;
+            margin: 0; padding: 30px 15px; display: flex; flex-direction: column;
+            align-items: center; min-height: 100vh; box-sizing: border-box; transition: background-color 0.4s ease, color 0.4s ease;
         }
-
-        header {
-            text-align: center;
-            margin-bottom: 30px;
-            width: 100%;
-            max-width: 1140px;
-        }
-
-        h1 {
-            color: var(--accent-gold-light);
-            margin: 0 0 6px 0;
-            font-size: 2rem;
-            font-weight: 700;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-        }
-
-        .subtitle {
-            font-size: 0.9rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: 460px 1fr;
-            gap: 30px;
-            max-width: 1140px;
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        .panel {
-            background: var(--panel-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .preview-panel {
-            align-items: center;
-            justify-content: center;
-            background: radial-gradient(circle at center, #231f1a 0%, var(--panel-bg) 100%);
-            min-height: 500px;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .slider-group {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .slider-group input { flex: 1; }
-        .slider-val { font-family: monospace; font-size: 0.9rem; color: var(--accent-gold-light); width: 45px; text-align: right; }
-
-        label {
-            font-size: 0.75rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--accent-gold-light);
-        }
-
-        textarea, select, input[type="text"] {
-            background: var(--input-bg);
-            border: 1px solid var(--border-color);
-            color: #fff;
-            padding: 12px 14px;
-            border-radius: 8px;
-            font-size: 0.95rem;
-            outline: none;
-            transition: all 0.25s ease;
-        }
-
-        textarea:focus, select:focus, input[type="text"]:focus {
-            border-color: var(--accent-gold);
-        }
-
-        /* Suggestion 13: Responsive Canvas Constraints */
-        .canvas-rim {
-            position: relative;
-            padding: 16px;
-            background: #2b2621;
-            border-radius: 50%;
-            border: 6px solid #aa803b;
-            box-shadow: 0 15px 45px rgba(0,0,0,0.8);
-            width: 100%;
-            max-width: 560px;
-            box-sizing: border-box;
-            aspect-ratio: 1 / 1; 
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        canvas {
-            background-color: var(--sand-base);
-            border-radius: 50%;
-            box-shadow: inset 0 0 25px rgba(0,0,0,0.5);
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
-
-        .telemetry-display {
-            background: var(--input-bg);
-            border: 1px solid var(--border-color);
-            border-left: 4px solid var(--accent-gold);
-            border-radius: 6px;
-            padding: 14px;
-            font-family: monospace;
-            font-size: 0.8rem;
-            line-height: 1.6;
-        }
-
-        .telemetry-header {
-            color: var(--accent-gold-light);
-            font-weight: bold;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            font-size: 0.75rem;
-        }
-
-        .telemetry-row {
-            display: flex;
-            justify-content: space-between;
-            border-bottom: 1px dashed #221f1b;
-            padding: 4px 0;
-        }
-
-        .telemetry-val { color: #fff; font-weight: bold; }
-
-        .history-list {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            margin: 0;
-            padding: 0;
-            list-style: none;
-            max-height: 100px;
-            overflow-y: auto;
-        }
-
-        .history-item {
-            background: var(--input-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 8px 12px;
-            font-size: 0.85rem;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .history-item:hover { border-color: var(--accent-gold-dim); }
-
-        .action-container {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .btn-row {
-            display: flex;
-            gap: 12px;
-        }
-
-        button {
-            padding: 14px 16px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            cursor: pointer;
-            border: none;
-            flex: 1;
-        }
-
-        #export-btn { background: #2a2724; color: var(--text-main); border: 1px solid var(--border-color); }
-        #save-btn { background: linear-gradient(180deg, var(--btn-green-hover) 0%, var(--btn-green) 100%); color: #fff; }
-        #stream-btn { background: linear-gradient(180deg, var(--btn-blue-hover) 0%, var(--btn-blue) 100%); color: #fff; }
-        #stream-btn.streaming { background: #9b2c2c; }
-
-        #status-banner {
-            font-size: 0.85rem;
-            text-align: center;
-            min-height: 1.25rem;
-            font-weight: 600;
-        }
-
-        @media (max-width: 950px) {
-            .dashboard-grid { grid-template-columns: 1fr; }
-            .preview-panel { min-height: auto; padding: 40px 20px; }
-        }
+        header { width: 100%; max-width: 1240px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color); }
+        .header-titles h1 { color: var(--accent-gold); margin: 0 0 4px 0; font-size: 2.2rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+        .header-titles .subtitle { font-size: 0.9rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 3px; font-weight: 600; }
+        .top-controls { display: flex; gap: 12px; align-items: center; }
+        .top-controls select, .top-controls button, .btn-secondary { padding: 10px 16px; font-size: 0.85rem; font-weight: 600; cursor: pointer; background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .top-controls button:hover, .btn-secondary:hover { border-color: var(--accent-gold); color: var(--accent-gold); transform: translateY(-1px); }
+        .dashboard-grid { display: grid; grid-template-columns: 500px 1fr; gap: 25px; max-width: 1240px; width: 100%; box-sizing: border-box; }
+        .panel { background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 24px; box-shadow: var(--shadow-soft); display: flex; flex-direction: column; gap: 20px; transition: background-color 0.4s ease, border-color 0.4s ease; }
+        .preview-panel { align-items: center; justify-content: center; background: radial-gradient(circle at center, rgba(0,0,0,0.05) 0%, var(--panel-bg) 100%); min-height: 600px; overflow: hidden; position: relative; padding: 0; }
+        .preview-panel.fullscreen-mode { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 9999; border-radius: 0; background: var(--bg-dark); min-height: 100vh; }
+        .canvas-container { width: 100%; max-width: 700px; aspect-ratio: 1 / 1; position: relative; margin: auto; border-radius: 50%; padding: 15px; background: linear-gradient(145deg, var(--border-color), var(--bg-dark)); box-shadow: 0 30px 60px rgba(0,0,0,0.6), inset 0 2px 10px rgba(255,255,255,0.05); }
+        .preview-panel.fullscreen-mode .canvas-container { max-width: 90vh; }
+        .form-section { background: rgba(0,0,0,0.1); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 16px; border: 1px solid rgba(255,255,255,0.02); }
+        .form-group { display: flex; flex-direction: column; gap: 8px; }
+        .row-group { display: flex; gap: 15px; width: 100%; }
+        .row-group .form-group { flex: 1; }
+        .slider-group { display: flex; align-items: center; gap: 15px; }
+        .slider-group input[type="range"] { flex: 1; }
+        .slider-val { font-family: monospace; font-size: 0.85rem; font-weight: bold; color: var(--accent-gold); width: 45px; text-align: right; background: var(--input-bg); padding: 4px 6px; border-radius: 6px; border: 1px solid var(--border-color); }
+        label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+        label[title] { cursor: help; }
+        textarea, select, input[type="text"], input[type="number"] { background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-main); padding: 12px 14px; border-radius: 8px; font-size: 0.95rem; outline: none; transition: all 0.2s ease; box-sizing: border-box; width: 100%; box-shadow: var(--shadow-inner); }
+        textarea:focus, select:focus, input[type="text"], input[type="number"]:focus { border-color: var(--accent-gold); box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.15), var(--shadow-inner); }
+        input[type="range"] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type="range"]:focus { outline: none; }
+        input[type="range"]::-webkit-slider-runnable-track { width: 100%; height: 6px; cursor: pointer; background: var(--border-color); border-radius: 10px; }
+        input[type="range"]::-webkit-slider-thumb { height: 18px; width: 18px; border-radius: 50%; background: var(--accent-gold); cursor: pointer; -webkit-appearance: none; margin-top: -6px; box-shadow: 0 2px 6px rgba(0,0,0,0.5); transition: transform 0.1s; }
+        input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+        .toggle-container { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; font-size: 0.85rem; font-weight: 600; color: var(--text-main); }
+        .switch { position: relative; display: inline-block; width: 40px; height: 22px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider-toggle { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: var(--input-bg); border: 1px solid var(--border-color); transition: .3s; border-radius: 22px; }
+        .slider-toggle:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: var(--text-muted); transition: .3s; border-radius: 50%; }
+        input:checked + .slider-toggle { background-color: rgba(212, 175, 55, 0.2); border-color: var(--accent-gold); }
+        input:checked + .slider-toggle:before { transform: translateX(18px); background-color: var(--accent-gold); }
+        .segmented-control { display: flex; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 4px; gap: 4px; box-shadow: var(--shadow-inner); }
+        .segmented-control button { background: transparent; border: none; color: var(--text-muted); padding: 8px 0; flex: 1; border-radius: 6px; font-weight: 700; font-size: 0.8rem; transition: all 0.2s; cursor: pointer; }
+        .segmented-control button.active { background: var(--accent-gold); color: #000; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+        .segmented-control button:hover:not(.active) { color: var(--text-main); background: rgba(255,255,255,0.05); }
+        details.advanced-settings { background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; }
+        details.advanced-settings summary { padding: 16px; font-size: 0.85rem; font-weight: 700; color: var(--accent-gold); text-transform: uppercase; cursor: pointer; letter-spacing: 1px; outline: none; display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.02); transition: background 0.2s; }
+        details.advanced-settings summary:hover { background: rgba(255,255,255,0.05); }
+        details.advanced-settings summary::after { content: "?"; transition: transform 0.3s; }
+        details[open].advanced-settings summary::after { transform: rotate(180deg); }
+        .advanced-content { padding: 20px 16px; display: flex; flex-direction: column; gap: 16px; border-top: 1px solid var(--border-color); }
+        .mode-desc { font-size: 0.8rem; color: var(--text-muted); font-style: italic; margin-top: -6px; padding-left: 4px; }
+        canvas { display: block; width: 100%; height: 100%; cursor: grab; border-radius: 50%; }
+        canvas:active { cursor: grabbing; }
+        .canvas-overlay-ui { position: absolute; top: 15px; left: 15px; right: 15px; display: flex; justify-content: space-between; pointer-events: none; z-index: 10; }
+        .canvas-overlay-text { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); background: var(--panel-bg); padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border-color); opacity: 0.9; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .canvas-controls { pointer-events: auto; display: flex; gap: 8px; }
+        .telemetry-display { background: var(--input-bg); border: 1px solid var(--border-color); border-left: 4px solid var(--accent-gold); border-radius: 10px; padding: 16px; font-family: monospace; font-size: 0.85rem; line-height: 1.6; box-shadow: var(--shadow-inner); }
+        .telemetry-header { color: var(--text-muted); font-weight: bold; margin-bottom: 10px; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px; }
+        .telemetry-row { display: flex; justify-content: space-between; border-bottom: 1px dashed var(--border-color); padding: 6px 0; }
+        .telemetry-row:last-child { border-bottom: none; }
+        .telemetry-val { color: var(--text-main); font-weight: bold; }
+        .history-section { background: rgba(0,0,0,0.1); border-radius: 12px; padding: 16px; border: 1px solid rgba(255,255,255,0.02); display: flex; flex-direction: column; gap: 10px; }
+        .history-list { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; max-height: 120px; overflow-y: auto; }
+        .history-item { background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 14px; font-size: 0.85rem; font-weight: 600; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s ease; color: var(--text-main); box-shadow: var(--shadow-inner); }
+        .history-item:hover { border-color: var(--accent-gold); color: var(--accent-gold); transform: translateX(2px); }
+        .action-container { display: flex; flex-direction: column; gap: 12px; margin-top: 5px; }
+        .btn-row { display: flex; gap: 12px; width: 100%; }
+        button.btn-primary { padding: 14px; border-radius: 10px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; cursor: pointer; border: none; flex: 1; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); display: flex; align-items: center; justify-content: center; gap: 8px; }
+        button.btn-primary:active { transform: scale(0.98); }
+        #export-btn { background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border-color); }
+        #export-btn:hover { border-color: var(--text-main); }
+        #copy-btn { border-style: dashed; flex: 0.5; background: transparent; color: var(--text-muted); }
+        #copy-btn:hover { border-color: var(--accent-gold); color: var(--accent-gold); }
+        #record-btn { background: #2a1c1c; color: #ff6b6b; border: 1px solid #8b2b2b; }
+        #record-btn:hover { background: #3a2424; border-color: #ff6b6b; }
+        #save-btn { background: linear-gradient(135deg, var(--accent-gold) 0%, #b38234 100%); color: #000; box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3); }
+        #save-btn:hover { box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4); transform: translateY(-2px); }
+        #status-banner { font-size: 0.85rem; text-align: center; min-height: 1.25rem; font-weight: 700; margin-bottom: 5px; color: var(--text-muted); }
+        .scrubber-container { width: 100%; display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+        .scrubber-container input[type="range"] { flex: 1; }
+        
+        #drag-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10, 10, 10, 0.85); backdrop-filter: blur(8px); z-index: 100000; display: none; align-items: center; justify-content: center; color: var(--accent-gold); font-size: 2.5rem; font-weight: 800; letter-spacing: 2px; border: 6px dashed var(--accent-gold-dim); box-sizing: border-box; text-transform: uppercase; pointer-events: none; }
+        
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 100000; display: none; align-items: center; justify-content: center; }
+        .modal-content { background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 16px; width: 90%; max-width: 850px; height: 85vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 30px 80px rgba(0,0,0,0.9); }
+        .modal-header { padding: 24px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); }
+        .modal-header h2 { margin: 0; color: var(--accent-gold); font-size: 1.5rem; text-transform: uppercase; letter-spacing: 1px; }
+        .modal-body { padding: 24px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 30px; }
+        .inspector-section h3 { margin: 0 0 15px 0; color: var(--text-main); font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
+        .kerning-controls { display: flex; gap: 15px; align-items: center; margin-bottom: 15px; }
+        .kerning-controls input { width: 70px; text-align: center; font-size: 1.4rem; font-weight: bold; }
+        #kern-value-display { font-family: monospace; font-size: 1rem; color: var(--accent-gold); background: var(--bg-dark); padding: 10px 16px; border-radius: 8px; border: 1px solid var(--border-color); }
+        #kerning-canvas { background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 12px; width: 100%; max-width: 500px; height: 180px; box-shadow: var(--shadow-inner); }
+        .glyph-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 15px; }
+        .glyph-box { background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 10px; display: flex; flex-direction: column; align-items: center; padding: 12px; transition: all 0.2s; box-shadow: var(--shadow-inner); }
+        .glyph-box:hover { border-color: var(--accent-gold); transform: translateY(-3px); box-shadow: 0 6px 15px rgba(0,0,0,0.3); }
+        .glyph-box span { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px; font-weight: 700; background: var(--panel-bg); padding: 2px 8px; border-radius: 4px;}
+        .glyph-box canvas { width: 60px; height: 60px; }
     </style>
 </head>
 <body>
 
+    <div id="drag-overlay">👉 DROP SVG OR JSON FONT</div>
+    
+    <svg id="hidden-svg-workspace" style="position:absolute; width:0; height:0; pointer-events:none;" aria-hidden="true"></svg>
+
+    <div id="font-manager-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🖋️ Font Manager & Inspector</h2>
+                <button class="btn-secondary" onclick="closeFontManager()">✕ Close</button>
+            </div>
+            <div class="modal-body">
+                <div class="inspector-section">
+                    <h3>Kerning Pair Inspector</h3>
+                    <div class="kerning-controls">
+                        <input type="text" id="kern-char-1" maxlength="1" value="A" oninput="updateKerningPreview()">
+                        <input type="text" id="kern-char-2" maxlength="1" value="a" oninput="updateKerningPreview()">
+                        <span id="kern-value-display">Offset: --</span>
+                    </div>
+                    <canvas id="kerning-canvas" width="500" height="180"></canvas>
+                </div>
+                <div class="inspector-section">
+                    <h3>Available Glyphs</h3>
+                    <div id="glyph-grid" class="glyph-grid"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <header>
-        <h1>Sand Table Text Compiler</h1>
-        <div class="subtitle">Unified Raspberry Pi Serial Interface</div>
+        <div class="header-titles">
+            <h1>Dune Weaver</h1>
+            <div class="subtitle">Kinematic Calligraphy Compiler</div>
+        </div>
+        <div class="top-controls">
+            <button onclick="openFontManager()" title="Open Font Manager & Inspector">🛠️ Font Manager</button>
+            <select id="theme-select" title="Change application visual theme">
+                <option value="dark">🌙 Obsidian Theme</option>
+                <option value="sand">🏜️ Sand Theme</option>
+                <option value="light">☀️ Light Theme</option>
+            </select>
+            <div style="position: relative; overflow: hidden; display: inline-block;">
+                <button title="Upload Custom Font SVG/JSON" class="btn-secondary">📂 Load Font</button>
+                <input type="file" id="font-upload" accept=".json,.svg" style="position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer; height: 100%;">
+            </div>
+        </div>
     </header>
 
     <div class="dashboard-grid">
         <div class="panel">
-            <div class="form-group">
-                <label for="text-input">Text Message Payload</label>
-                <textarea id="text-input" rows="3" placeholder="Enter words to weave...">testing</textarea>
-            </div>
-
-            <div class="form-group">
-                <label for="filename-input">Pattern Save Name</label>
-                <input type="text" id="filename-input" value="testing">
-            </div>
-
-            <div class="form-group">
-                <label for="mode-select">Geometric Projection Profile</label>
-                <select id="mode-select">
-                    <option value="centered">Centered Block Stack</option>
-                    <option value="circle">Concentric Circular Ring Bend</option>
-                    <option value="spiral">Continuous Archimedean Spiral Wrap</option>
-                    <option value="sinewave">Rolling Sine Wave Horizontal Ribbon</option>
-                    <option value="ellipse">The Gentle Ellipse</option>
-                    <option value="petal">The Soft Petal (5-Ripple)</option>
-                    <option value="peanut">The Cassini Peanut</option>
-                    <option value="squircle">The Perimeter Squircle</option>
-                </select>
-            </div>
-
-            <!-- Suggestion 12: Feedrate Slider -->
-            <div class="form-group">
-                <label for="speed-slider">Streaming Feedrate</label>
-                <div class="slider-group">
-                    <input type="range" id="speed-slider" min="5" max="150" value="45">
-                    <div id="speed-val" class="slider-val">45ms</div>
+            <div class="form-section">
+                <div class="form-group">
+                    <label for="text-input" title="The text to render on the sand table">Message Payload</label>
+                    <textarea id="text-input" rows="3" placeholder="Enter words to weave...">The quick brown fox</textarea>
+                </div>
+                <div class="row-group">
+                    <div class="form-group">
+                        <label for="filename-input" title="Used for the exported .thr file">Pattern Name</label>
+                        <input type="text" id="filename-input" value="cursive_track">
+                    </div>
+                    <div class="form-group">
+                        <label for="mode-select" title="The mathematical shape the text wraps around">Geometric Projection</label>
+                        <select id="mode-select">
+                            <option value="centered">Centered Block Stack</option>
+                            <option value="circle">Concentric Circular Ring Bend</option>
+                            <option value="spiral">Continuous Archimedean Spiral</option>
+                            <option value="sinewave">Rolling Sine Wave Ribbon</option>
+                            <option value="ellipse">The Gentle Ellipse</option>
+                            <option value="petal">The Soft Petal (5-Ripple)</option>
+                            <option value="peanut">The Cassini Peanut</option>
+                            <option value="squircle">The Perimeter Squircle</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mode-desc" id="mode-desc-text">Linear text arranged horizontally in the center of the table.</div>
+                <div class="form-group">
+                    <label title="Force a specific scale multiplier, or automatically scale to fit the table boundary">Scaling Strategy</label>
+                    <div class="segmented-control" id="scale-controls">
+                        <button class="scale-btn" onclick="setScaling(0.5, this)">50%</button>
+                        <button class="scale-btn" onclick="setScaling(1.0, this)">100%</button>
+                        <button class="scale-btn" onclick="setScaling(1.5, this)">150%</button>
+                        <button class="scale-btn" onclick="setScaling(2.0, this)">200%</button>
+                        <button class="scale-btn active" onclick="setScaling('auto', this)">Auto-Fit</button>
+                    </div>
                 </div>
             </div>
 
-            <div class="telemetry-display">
-                <div class="telemetry-header">[ Pi Controller Telemetry Dashboard ]</div>
-                <div class="telemetry-row"><span>Vector Output Nodes:</span><span id="tel-nodes" class="telemetry-val">--</span></div>
-                <div class="telemetry-row"><span>Rotational Matrix Loops:</span><span id="tel-revs" class="telemetry-val">--</span></div>
-                <div class="telemetry-row"><span>Calculated Font Scale:</span><span id="tel-scale" class="telemetry-val">--</span></div>
-            </div>
+            <details class="advanced-settings">
+                <summary>⚙️ Advanced Tuning & Hardware</summary>
+                <div class="advanced-content">
+                    <div class="row-group">
+                        <div class="form-group">
+                            <label for="table-diam" title="Physical width of your sand drawing area">Table Model / Diameter (mm)</label>
+                            <select id="table-diam" style="padding: 12px 14px; background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px;">
+                                <option value="500">Dune Weaver Gold (500mm)</option>
+                                <option value="900">Dune Weaver Pro (900mm)</option>
+                                <option value="380">Mini Table (380mm)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="ball-diam" title="Physical width of your steel ball bearing">Ball Dia. (mm)</label>
+                            <input type="number" id="ball-diam" value="10" min="2" max="30">
+                        </div>
+                    </div>
+                    <div class="row-group">
+                        <div class="form-group">
+                            <label for="justification-select" title="Align text blocks. Only affects Centered Stack mode.">Text Alignment</label>
+                            <select id="justification-select">
+                                <option value="center">Center</option>
+                                <option value="left">Left</option>
+                                <option value="right">Right</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="api-url" title="Endpoint for saving directly to your table's controller">Controller API</label>
+                            <input type="text" id="api-url" placeholder="http://192.168.1.100:8000">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" style="margin-top: 5px; padding: 12px; background: rgba(212,175,55,0.05); border-radius: 8px; border: 1px solid rgba(212,175,55,0.2);">
+                        <label for="droop-slider" style="margin-top: 10px;" title="Controls the downward curve of transit lines connecting words">💧 Word Jump Droop</label>
+                        <div class="slider-group">
+                            <input type="range" id="droop-slider" min="0" max="100" value="30">
+                            <div id="droop-val" class="slider-val">30%</div>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 5px;">
+                        <label for="margin-slider" title="Keeps text away from the absolute edge of the table (Padding)">Perimeter Margin</label>
+                        <div class="slider-group">
+                            <input type="range" id="margin-slider" min="0" max="50" value="2">
+                            <div id="margin-val" class="slider-val">2%</div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="kerning-slider" title="Horizontal space between characters">Character Spacing</label>
+                        <div class="slider-group">
+                            <input type="range" id="kerning-slider" min="0" max="200" value="100">
+                            <div id="kerning-val" class="slider-val">100%</div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="leading-slider" title="Vertical space between rows of text">Line Spacing</label>
+                        <div class="slider-group">
+                            <input type="range" id="leading-slider" min="50" max="250" value="100">
+                            <div id="leading-val" class="slider-val">100%</div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="wipe-quality-slider" title="Density of the center-out flattening spiral">Wipe Quality</label>
+                        <div class="slider-group">
+                            <input type="range" id="wipe-quality-slider" min="10" max="100" value="50">
+                            <div id="wipe-quality-val" class="slider-val">50%</div>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 10px;">
+                        <label for="feedrate-input" title="Used to estimate total print time">Est. Feedrate (ms/pt)</label>
+                        <input type="number" id="feedrate-input" value="45" min="1">
+                    </div>
+                    <div class="form-group" style="gap: 12px; background: var(--bg-dark); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
+                        <label class="toggle-container" title="Utilize pre-drawn complex transitions between specific letters">
+                            Use Context Ligatures
+                            <div class="switch">
+                                <input type="checkbox" id="ligature-toggle" checked>
+                                <span class="slider-toggle"></span>
+                            </div>
+                        </label>
+                        <label class="toggle-container" title="Erase the table completely before drawing text">
+                            Prepend Spiral Wipe
+                            <div class="switch">
+                                <input type="checkbox" id="wipe-toggle">
+                                <span class="slider-toggle"></span>
+                            </div>
+                        </label>
+                        <label class="toggle-container" title="Draw the final path from the end to the beginning">
+                            Reverse Draw Direction
+                            <div class="switch">
+                                <input type="checkbox" id="reverse-toggle">
+                                <span class="slider-toggle"></span>
+                            </div>
+                        </label>
+                        <label class="toggle-container" title="Smooth sharp angles in the generated vector path">
+                            Smooth Corners
+                            <div class="switch">
+                                <input type="checkbox" id="smooth-toggle" checked>
+                                <span class="slider-toggle"></span>
+                            </div>
+                        </label>
+                        <label class="toggle-container" title="Show raw vector nodes and exact toolpath for debugging">
+                            🛠️ Debug Toolpath Nodes
+                            <div class="switch">
+                                <input type="checkbox" id="debug-toggle" onchange="renderSandVirtualTwin(lastGeneratedPolarPath)">
+                                <span class="slider-toggle"></span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </details>
 
             <div class="history-section">
-                <label>Recent Saved Patterns</label>
+                <label style="margin-bottom: 8px;">Recent Saved Patterns</label>
                 <ul id="history-list" class="history-list"></ul>
             </div>
 
-            <div class="action-container">
-                <div id="status-banner"></div>
-                <div class="btn-row">
-                    <button id="export-btn">Download THR</button>
-                    <button id="save-btn">📤 Save to Table</button>
+            <div class="telemetry-display">
+                <div class="telemetry-header">📡 Telemetry Dashboard</div>
+                <div class="telemetry-row"><span>Vector Nodes:</span><span id="tel-nodes" class="telemetry-val">--</span></div>
+                <div class="telemetry-row"><span>Path Rotations:</span><span id="tel-revs" class="telemetry-val">--</span></div>
+                <div class="telemetry-row"><span>MKS DLC32 Optimization:</span><span id="tel-rdp" class="telemetry-val" style="color:var(--text-muted)">Inactive</span></div>
+                <div class="telemetry-row"><span>Final Font Scale:</span><span id="tel-scale" class="telemetry-val">--</span></div>
+                <div class="telemetry-row"><span>Physics Legibility:</span><span id="tel-legibility" class="telemetry-val">--</span></div>
+                <div class="telemetry-row" style="margin-top: 6px; padding-top: 10px; border-top: 1px solid var(--border-color);">
+                    <span style="color:var(--accent-gold);">Estimated Time:</span>
+                    <span id="tel-time" class="telemetry-val" style="color:var(--accent-gold); font-size: 1.1rem;">--</span>
                 </div>
-                <button id="stream-btn">🎮 Stream Live to Gantry</button>
+            </div>
+
+            <div class="action-container">
+                <div id="status-banner">Initializing Kinematic Engine...</div>
+                <div class="form-group" style="margin-bottom: 8px; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <label for="sim-scrubber">Simulation Timeline</label>
+                        <span id="live-coord-readout" style="font-family: monospace; font-size: 0.75rem; color: var(--accent-gold);">Th: -- | R: --</span>
+                    </div>
+                    <div class="scrubber-container">
+                        <input type="range" id="sim-scrubber" min="0" max="100" value="0">
+                    </div>
+                    <div class="slider-group" style="margin-top: 10px;">
+                        <input type="range" id="sim-speed-slider" min="1" max="100" value="20" style="flex:0.7">
+                        <div id="sim-speed-val" class="slider-val">20x</div>
+                    </div>
+                    <div style="display:flex; gap: 8px; margin-top: 10px;">
+                        <button id="sim-btn" class="btn-primary" onclick="toggleSimulation()">▶ Play</button>
+                        <button id="record-btn" class="btn-primary" style="flex:0.5;" onclick="toggleRecording()">📼 REC</button>
+                    </div>
+                </div>
+
+                <div class="btn-row">
+                    <button id="export-btn" class="btn-primary" onclick="triggerFileDownload()">💾 Download .THR</button>
+                    <button id="copy-btn" class="btn-primary" onclick="copyRawPath()">📋 Copy</button>
+                </div>
+                <button id="save-btn" class="btn-primary" onclick="uploadToController()">🚀 Save Direct to Table</button>
             </div>
         </div>
 
-        <div class="panel preview-panel">
-            <div class="canvas-rim">
+        <div class="panel preview-panel" id="preview-panel-box">
+            <div class="canvas-overlay-ui">
+                <div class="canvas-overlay-text">⌨️ Ctrl+Enter (Save) | Space (Sim) | Ctrl+S (Export)</div>
+                <div class="canvas-controls">
+                    <button class="btn-secondary" onclick="toggleMagnifier()" id="mag-btn" title="Toggle Canvas Loupe">🔎 Loupe</button>
+                    <button class="btn-secondary" onclick="toggleFullscreen()" title="Toggle Fullscreen">⛶ Fullscreen</button>
+                    <button class="btn-secondary" onclick="captureCanvas()" title="Download Screenshot">📸 Capture</button>
+                </div>
+            </div>
+            <div class="canvas-container">
                 <canvas id="sandCanvas"></canvas>
             </div>
         </div>
     </div>
 
     <script>
-        // Suggestion 3: Pre-calculate and Cache Glyphs
-        class ProportionalRetracedFont {
-            static GLYPHS = {
-                'a': { width: 0.5, path: [[0,0], [0,0.85], [0.5,0.85], [0.5,0], [0.5,0.4], [0,0.4], [0.5,0.4], [0.5,0], [0.5,0.85], [0,0.85], [0,0]] },
-                'b': { width: 0.5, path: [[0,0], [0,0.85], [0.5,0.85], [0.5,0.45], [0,0.45], [0.5,0.45], [0.5,0], [0,0]] },
-                'c': { width: 0.5, path: [[0,0], [0.5,0], [0,0], [0,0.85], [0.5,0.85], [0,0.85], [0,0]] },
-                'd': { width: 0.5, path: [[0,0], [0.5,0], [0.5,0.85], [0,0.85], [0,0]] },
-                'e': { width: 0.5, path: [[0,0], [0.5,0], [0,0], [0,0.45], [0.4,0.45], [0,0.45], [0,0.85], [0.5,0.85], [0,0.85], [0,0]] },
-                'f': { width: 0.5, path: [[0,0], [0,0.45], [0.4,0.45], [0,0.45], [0,0.85], [0.5,0.85], [0,0.85], [0,0]] },
-                'g': { width: 0.5, path: [[0,0], [0.5,0], [0.5,0.45], [0.25,0.45], [0.5,0.45], [0.5,0], [0,0], [0,0.85], [0.5,0.85], [0,0.85], [0,0]] },
-                'h': { width: 0.5, path: [[0,0], [0,0.85], [0,0.45], [0.5,0.45], [0.5,0.85], [0.5,0], [0.5,0.45], [0,0.45], [0,0]] },
-                'i': { width: 0.25, path: [[0,0], [0.25,0], [0.125,0], [0.125,0.85], [0.25,0.85], [0,0.85], [0.125,0.85], [0.125,0], [0,0]] },
-                'j': { width: 0.5, path: [[0,0], [0.25,0], [0.25,0.85], [0.5,0.85], [0,0.85], [0.25,0.85], [0.25,0], [0,0]] },
-                'k': { width: 0.5, path: [[0,0], [0,0.85], [0,0.45], [0.5,0.85], [0,0.45], [0.5,0], [0,0.45], [0,0]] },
-                'l': { width: 0.5, path: [[0,0], [0.5,0], [0,0], [0,0.85], [0,0]] },
-                'm': { width: 0.5, path: [[0,0], [0,0.85], [0.25,0.35], [0.5,0.85], [0.5,0], [0.5,0.85], [0.25,0.35], [0,0.85], [0,0]] },
-                'n': { width: 0.5, path: [[0,0], [0,0.85], [0.5,0], [0.5,0.85], [0.5,0], [0,0.85], [0,0]] },
-                'o': { width: 0.5, path: [[0,0], [0.5,0], [0.5,0.85], [0,0.85], [0,0]] },
-                'p': { width: 0.5, path: [[0,0], [0,0.85], [0.5,0.85], [0.5,0.45], [0,0.45], [0,0]] },
-                'q': { width: 0.5, path: [[0,0], [0.5,0], [0.5,0.85], [0,0.85], [0,0], [0.25,0.25], [0.5,-0.25], [0.25,0.25], [0,0]] },
-                'r': { width: 0.5, path: [[0,0], [0,0.85], [0.5,0.85], [0.5,0.45], [0,0.45], [0.5,0], [0,0.45], [0,0]] },
-                's': { width: 0.5, path: [[0,0], [0.5,0], [0.5,0.45], [0,0.45], [0,0.85], [0.5,0.85], [0,0.85], [0,0.45], [0.5,0.45], [0.5,0], [0,0]] },
-                't': { width: 0.5, path: [[0,0], [0.25,0], [0.25,0.85], [0.5,0.85], [0,0.85], [0.25,0.85], [0.25,0], [0,0]] },
-                'u': { width: 0.5, path: [[0,0], [0,0.85], [0,0], [0.5,0], [0.5,0.85], [0.5,0], [0,0]] },
-                'v': { width: 0.5, path: [[0,0], [0.25,0], [0,0.85], [0.25,0], [0.5,0.85], [0.25,0], [0,0]] },
-                'w': { width: 0.65, path: [[0,0], [0,0.85], [0,0], [0.25,0.5], [0.5,0], [0.5,0.85], [0.5,0], [0.25,0.5], [0,0]] },
-                'x': { width: 0.5, path: [[0,0], [0.5,0.85], [0.25,0.425], [0,0.85], [0.25,0.425], [0.5,0], [0.25,0.425], [0,0]] },
-                'y': { width: 0.5, path: [[0,0], [0.25,0], [0.25,0.45], [0,0.85], [0.25,0.45], [0.5,0.85], [0.25,0.45], [0.25,0], [0,0]] },
-                'z': { width: 0.5, path: [[0,0], [0.5,0], [0,0], [0.5,0.85], [0,0.85], [0.5,0.85], [0,0]] },
-                '1': { width: 0.3, path: [[0,0], [0.25,0], [0.25,0.85], [0.05,0.65], [0.25,0.85], [0.25,0], [0,0]] },
-                '2': { width: 0.5, path: [[0,0], [0.5,0], [0,0], [0,0.45], [0.5,0.45], [0.5,0.85], [0,0.85], [0.5,0.85], [0.5,0.45], [0,0.45], [0,0]] },
-                '3': { width: 0.5, path: [[0,0], [0.5,0], [0.5,0.45], [0.25,0.45], [0.5,0.45], [0.5,0.85], [0,0.85], [0.5,0.85], [0.5,0.45], [0.5,0], [0,0]] },
-                '4': { width: 0.5, path: [[0,0], [0.4,0], [0.4,0.85], [0,0.45], [0.4,0.45], [0,0.45], [0.4,0.85], [0.4,0], [0,0]] },
-                '5': { width: 0.5, path: [[0,0], [0.5,0], [0.5,0.45], [0,0.45], [0,0.85], [0.5,0.85], [0,0.85], [0,0.45], [0.5,0.45], [0.5,0], [0,0]] },
-                '6': { width: 0.5, path: [[0,0], [0.5,0], [0.5,0.45], [0,0.45], [0,0], [0,0.85], [0.5,0.85], [0,0.85], [0,0]] },
-                '7': { width: 0.5, path: [[0,0], [0.5,0.85], [0,0.85], [0.5,0.85], [0,0]] },
-                '8': { width: 0.5, path: [[0,0], [0.5,0], [0.5,0.85], [0,0.85], [0,0], [0.0,0.45], [0.5,0.45], [0,0.45], [0,0]] },
-                '9': { width: 0.5, path: [[0,0], [0.5,0], [0.5,0.85], [0,0.85], [0,0.45], [0.5,0.45], [0.5,0], [0,0]] },
-                '0': { width: 0.5, path: [[0,0], [0.5,0], [0.5,0.85], [0,0.85], [0,0], [0.5,0.85], [0,0]] },
-                '!': { width: 0.3, path: [[0,0], [0.2,0], [0.2,0.15], [0.1,0.15], [0.1,0], [0.15,0], [0.15,0.3], [0.05,0.85], [0.25,0.85], [0.15,0.3], [0.15,0], [0,0]] },
-                '@': { width: 0.6, path: [[0,0], [0.5,0], [0.5,0.85], [0,0.85], [0,0.15], [0.35,0.15], [0.35,0.55], [0.15,0.55], [0.15,0.35], [0.35,0.35], [0.15,0.35], [0.15,0.55], [0.35,0.55], [0.35,0.15], [0,0.15], [0,0.85], [0.5,0.85], [0.5,0], [0,0]] },
-                '#': { width: 0.6, path: [[0,0], [0.5,0], [0.5,0.3], [0,0.3], [0,0.6], [0.5,0.6], [0.5,0.85], [0.35,0.85], [0.35,0], [0.15,0], [0.15,0.85], [0,0.85], [0,0]] },
-                '$': { width: 0.6, path: [[0,0], [0.25,0], [0.25,-0.15], [0.25,1], [0.25,0.85], [0,0.85], [0,0.45], [0.5,0.45], [0.5,0], [0,0], [0.5,0], [0.5,0.45], [0,0.45], [0,0.85], [0.25,0.85], [0.25,0], [0,0]] },
-                '%': { width: 0.6, path: [[0,0], [0.5,0.85], [0,0.85], [0,0.55], [0.2,0.55], [0.2,0.85], [0,0.85], [0.5,0.85], [0,0], [0.3,0], [0.3,0.3], [0.5,0.3], [0.5,0], [0.3,0], [0,0]] },
-                '^': { width: 0.6, path: [[0,0], [0.25,0], [0.25,0.45], [0,0.45], [0.25,0.85], [0.5,0.45], [0.25,0.45], [0.25,0], [0,0]] },
-                '&': { width: 0.6, path: [[0,0], [0.5,0], [0.1,0.45], [0.1,0.85], [0.4,0.85], [0.4,0.45], [0,0], [0.4,0.45], [0.4,0.85], [0.1,0.85], [0.1,0.45], [0.5,0], [0,0]] },
-                '*': { width: 0.6, path: [[0,0], [0.25,0], [0.25,0.45], [0,0.45], [0.5,0.85], [0.25,0.65], [0.25,0.85], [0.25,0.65], [0,0.85], [0.5,0.45], [0,0.45], [0.25,0.45], [0.25,0], [0,0]] },
-                '(': { width: 0.35, path: [[0,0], [0.25,0], [0.05,0.425], [0.25,0.85], [0.05,0.425], [0.25,0], [0,0]] },
-                ')': { width: 0.35, path: [[0,0], [0.25,0.425], [0,0.85], [0.25,0.425], [0,0]] },
-                '.': { width: 0.25, path: [[0,0], [0.15,0], [0.15,0.15], [0,0.15], [0,0]] },
-                ',': { width: 0.25, path: [[0,0], [0.15,0], [0.15,0.15], [0,0.15], [0,0], [0.15,0], [0.05,-0.25], [0.15,0], [0,0]] },
-                '-': { width: 0.5, path: [[0,0], [0,0.45], [0.4,0.45], [0,0.45], [0,0]] },
-                '?': { width: 0.5, path: [[0,0], [0.25,0], [0.25,0.15], [0.35,0.15], [0.35,0], [0.25,0], [0.25,0.5], [0.45,0.5], [0.45,0.85], [0.05,0.85], [0.05,0.6], [0.05,0.85], [0.45,0.85], [0.45,0.5], [0.25,0.5], [0.25,0], [0,0]] },
-                '\'': { width: 0.3, path: [[0,0], [0.1,0], [0.1,0.5], [0,0.85], [0.2,0.85], [0.1,0.5], [0.1,0], [0,0]] },
-                '"': { width: 0.4, path: [[0,0], [0.1,0], [0.1,0.5], [0,0.85], [0.15,0.85], [0.1,0.5], [0.25,0.5], [0.15,0.85], [0.3,0.85], [0.25,0.5], [0.1,0.5], [0.1,0], [0,0]] },
-                ' ': { width: 0.35, path: [] }
-            };
+        // ==========================================
+        // CALLIGRAPHY PHYSICS ENGINE (SVG -> JSON)
+        // ==========================================
+        class FontUpgrader {
+            static distance(p1, p2) { return Math.hypot(p1[0]-p2[0], p1[1]-p2[1]); }
+            
+            static optimizeCursiveStrokes(strokes) {
+                if (!strokes || strokes.length === 0) return [];
+                
+                let filtered = strokes.filter(s => {
+                    if (!s || s.length === 0) return false;
+                    let xs = s.map(p => p[0]), ys = s.map(p => p[1]);
+                    let w = Math.max(...xs) - Math.min(...xs);
+                    let h = Math.max(...ys) - Math.min(...ys);
+                    let isDot = (w < 0.1 && h < 0.1); 
+                    return !isDot;
+                });
+                
+                if (filtered.length === 0) filtered = strokes.filter(s => s && s.length > 0); 
+                if (filtered.length === 0) return [];
+                
+                for (let s of filtered) {
+                    let startX = s[0][0];
+                    let endX = s[s.length - 1][0];
+                    if (startX > endX + 0.02) {
+                        s.reverse();
+                    }
+                }
 
-            static getGlyph(char) {
-                return this.GLYPHS[char.toLowerCase()] || { width: 0.35, path: [] };
+                filtered.sort((a, b) => {
+                    let maxXa = Math.max(...a.map(p => p[0]));
+                    let maxXb = Math.max(...b.map(p => p[0]));
+                    return maxXa - maxXb;
+                });
+                
+                return filtered;
+            }
+
+            static mergeInternalStrokes(glyphData) {
+                let strokes = (glyphData.strokes || []).filter(s => s && s.length > 0);
+                if(strokes.length <= 1) return strokes;
+
+                let mergedStroke = strokes[0].map(p => [...p]);
+                for(let i=1; i<strokes.length; i++) {
+                    let nextStroke = strokes[i];
+                    let p0 = mergedStroke[mergedStroke.length-1];
+                    let p3 = nextStroke[0];
+
+                    let dist = this.distance(p0, p3);
+                    if(dist < 0.001) { mergedStroke.push(...nextStroke); continue; }
+
+                    let steps = Math.max(5, Math.floor(dist / 0.005));
+                    for(let j=1; j<=steps; j++) {
+                        let t = j/steps;
+                        mergedStroke.push([
+                            p0[0] + (p3[0]-p0[0])*t,
+                            p0[1] + (p3[1]-p0[1])*t
+                        ]);
+                    }
+                    for(let pt of nextStroke) mergedStroke.push(pt);
+                }
+                return [mergedStroke];
+            }
+
+            static calculateBbox(glyph) {
+                let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+                let hasPts = false;
+                for(let s of glyph.strokes || []) {
+                    for(let p of s) {
+                        if(p[0]<minX) minX=p[0]; if(p[0]>maxX) maxX=p[0];
+                        if(p[1]<minY) minY=p[1]; if(p[1]>maxY) maxY=p[1];
+                        hasPts = true;
+                    }
+                }
+                if(hasPts) glyph.bbox = [minX, minY, maxX, maxY];
+                else glyph.bbox = [0, 0, glyph.width || 0.5, 0];
+            }
+
+            static upgrade(rawFont, droopMult=0.3) {
+                let fontData = JSON.parse(JSON.stringify(rawFont));
+
+                if(!fontData.kerning) fontData.kerning = {};
+                Object.assign(fontData.kerning, {
+                    "a-b": -0.065, "o-r": -0.040, "v-e": -0.050, "w-a": -0.035, 
+                    "o-o": -0.025, "e-r": -0.035, "r-s": -0.025, "e-e": -0.030,
+                    "l-l": -0.025, "t-t": -0.025, "s-s": -0.025
+                });
+
+                if(!fontData.ligatures) fontData.ligatures = {};
+                fontData.ligatures['or'] = {
+                    width: 0.650, requires_travel: false,
+                    exit_type: "baseline",
+                    strokes: [[[0.0, 0.4], [0.15, 0.4], [0.30, 0.45], [0.50, 0.0], [0.650, 0.0]]]
+                };
+
+                let midlineExits = new Set(['b', 'o', 'v', 'w']);
+
+                for(let char in fontData.glyphs) {
+                    let glyph = fontData.glyphs[char];
+                    
+                    if(char === ' ') {
+                        glyph.strokes = [];
+                        glyph.requires_travel = false;
+                        glyph.exit_type = "baseline";
+                        this.calculateBbox(glyph);
+                        continue;
+                    }
+
+                    let cleanStrokes = this.optimizeCursiveStrokes(glyph.strokes || []);
+                    glyph.strokes = this.mergeInternalStrokes({strokes: cleanStrokes});
+                    glyph.requires_travel = false;
+
+                    let isMidline = midlineExits.has(char.toLowerCase());
+                    glyph.exit_type = isMidline ? "midline" : "baseline";
+
+                    this.calculateBbox(glyph);
+                }
+                return fontData;
             }
         }
 
+        // ==========================================
+        // BROWSER SVG PARSER
+        // ==========================================
+        
+        let sharedSvgPath = null;
+        function getSharedSvgPath() {
+            if (!sharedSvgPath) {
+                sharedSvgPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                let workspace = document.getElementById('hidden-svg-workspace');
+                if (workspace) workspace.appendChild(sharedSvgPath);
+            }
+            return sharedSvgPath;
+        }
+
+        function sampleSvgPath(pathStr, unitsPerEm, resolution = 0.002) { 
+            let pathEl = getSharedSvgPath();
+            if (!pathEl) return [];
+            
+            pathEl.setAttribute("d", pathStr);
+            let length = pathEl.getTotalLength();
+            if (length === 0) return [];
+
+            let normLen = length / unitsPerEm;
+            let numSamples = Math.max(2, Math.floor(normLen / resolution));
+            
+            if (numSamples > 2000) numSamples = 2000; 
+
+            let stroke = [];
+            for (let i = 0; i < numSamples; i++) {
+                let t = i / (numSamples - 1);
+                let pt = pathEl.getPointAtLength(t * length);
+                stroke.push([ parseFloat((pt.x / unitsPerEm).toFixed(4)), parseFloat((pt.y / unitsPerEm).toFixed(4)) ]); 
+            }
+            return stroke;
+        }
+
+        function extractSvgFont(svgText) {
+            let parser = new DOMParser();
+            let doc = parser.parseFromString(svgText, "image/svg+xml");
+            if (doc.getElementsByTagName("parsererror").length > 0) throw new Error("Invalid SVG syntax.");
+
+            let fontFace = doc.getElementsByTagName('font-face')[0] || doc.getElementsByTagName('font')[0];
+            
+            let ascent = 0.8, descent = -0.2, unitsPerEm = 1000.0;
+            if (fontFace) {
+                if (fontFace.hasAttribute('ascent')) ascent = parseFloat(fontFace.getAttribute('ascent'));
+                if (fontFace.hasAttribute('descent')) descent = parseFloat(fontFace.getAttribute('descent'));
+                if (fontFace.hasAttribute('units-per-em')) unitsPerEm = parseFloat(fontFace.getAttribute('units-per-em'));
+            }
+
+            let fontData = {
+                metadata: { font_file: "uploaded.svg", normalized_scale: "0.0 to 1.0", ascent: ascent/unitsPerEm, descent: descent/unitsPerEm },
+                kerning: {}, glyphs: {}
+            };
+
+            let glyphs = doc.getElementsByTagName('glyph');
+            for (let glyph of glyphs) {
+                if (!glyph.hasAttribute('unicode')) continue;
+                let char = glyph.getAttribute('unicode');
+                let advX = unitsPerEm * 0.5;
+                if (glyph.hasAttribute('horiz-adv-x')) advX = parseFloat(glyph.getAttribute('horiz-adv-x'));
+                let normWidth = parseFloat((advX / unitsPerEm).toFixed(4));
+
+                let charData = { width: normWidth, requires_travel: true, strokes: [] };
+
+                if (glyph.hasAttribute('d')) {
+                    let d = glyph.getAttribute('d');
+                    let fullPath = sampleSvgPath(d, unitsPerEm, 0.002);
+                    let currentStroke = [];
+                    
+                    for(let i=0; i<fullPath.length; i++) {
+                        if (i > 0) {
+                            let dist = Math.hypot(fullPath[i][0] - fullPath[i-1][0], fullPath[i][1] - fullPath[i-1][1]);
+                            if (dist > 0.05) { 
+                                if (currentStroke.length > 0) charData.strokes.push(currentStroke);
+                                currentStroke = [];
+                            }
+                        }
+                        currentStroke.push(fullPath[i]);
+                    }
+                    if (currentStroke.length > 0) charData.strokes.push(currentStroke);
+                }
+                fontData.glyphs[char] = charData;
+            }
+
+            if (!fontData.glyphs[" "]) fontData.glyphs[" "] = { width: 0.35, requires_travel: false, strokes: [] };
+            return fontData;
+        }
+
+        // ==========================================
+        // KINEMATICS COMPILER PIPELINE
+        // ==========================================
+        let rawFontData = null;
+        let activeFontData = null;
+        let currentScaleStrategy = 'auto'; 
+        let isMagnifierActive = false;
+        let themeColors = { bgDark: "#0a0a0a", sandBase: "#d9b48f", borderColor: "#2a2622" };
+        let canvasScale = 1; let canvasPanX = 0; let canvasPanY = 0;
+        let isDragging = false; let lastMouseX = 0, lastMouseY = 0; let mouseCanvasX = 0, mouseCanvasY = 0;
+        let activeCompileNonce = 0;
+        let lastGeneratedPolarPath = [];
+
+        function updateThemeColors() {
+            let style = getComputedStyle(document.body);
+            themeColors.bgDark = style.getPropertyValue('--bg-dark').trim() || "#0a0a0a";
+            themeColors.sandBase = style.getPropertyValue('--sand-base').trim() || "#d9b48f";
+            themeColors.borderColor = style.getPropertyValue('--border-color').trim() || "#2a2622";
+        }
+
+        const modeDescriptions = {
+            "centered": "Standard horizontal text blocks stacked in the center of the table.",
+            "circle": "Text warped into a continuous concentric loop along the perimeter.",
+            "spiral": "Text continuously wound from the center to the edge like a vinyl record.",
+            "sinewave": "Text rolling smoothly across the horizontal axis.",
+            "ellipse": "Text mapped to a gentle oval perimeter track.",
+            "petal": "Text shaped into a 5-point flower mandala.",
+            "peanut": "Text compressed in the middle and flared at the edges.",
+            "squircle": "A square perimeter with gently rounded corners."
+        };
+
+        document.getElementById('theme-select').addEventListener('change', (e) => {
+            document.body.className = `theme-${e.target.value}`;
+            setTimeout(() => { updateThemeColors(); renderSandVirtualTwin(lastGeneratedPolarPath); }, 50);
+        });
+
+        function toggleFullscreen() { document.getElementById('preview-panel-box').classList.toggle('fullscreen-mode'); window.dispatchEvent(new Event('resize')); }
+        function toggleMagnifier() {
+            isMagnifierActive = !isMagnifierActive;
+            document.getElementById('mag-btn').style.background = isMagnifierActive ? 'var(--accent-gold)' : '';
+            document.getElementById('mag-btn').style.color = isMagnifierActive ? '#000' : '';
+            renderSandVirtualTwin(lastGeneratedPolarPath);
+        }
+
+        function setScaling(val, btnElement) {
+            currentScaleStrategy = val;
+            document.querySelectorAll('.scale-btn').forEach(btn => btn.classList.remove('active'));
+            if(btnElement) btnElement.classList.add('active');
+            updateCompilation(true);
+        }
+
+        function captureCanvas() {
+            const canvas = document.getElementById('sandCanvas');
+            const link = document.createElement('a');
+            link.download = (document.getElementById('filename-input').value || 'dune-weaver') + '-render.png';
+            link.href = canvas.toDataURL(); link.click();
+        }
+
+        function openFontManager() {
+            if (!activeFontData) { alert("Please load a font JSON/SVG file first."); return; }
+            document.getElementById('font-manager-modal').style.display = 'flex';
+            populateGlyphGrid(); updateKerningPreview();
+        }
+
+        function closeFontManager() { document.getElementById('font-manager-modal').style.display = 'none'; }
+
+        function populateGlyphGrid() {
+            const grid = document.getElementById('glyph-grid'); grid.innerHTML = ''; let scale = 30; 
+            for (let char in activeFontData.glyphs) {
+                let box = document.createElement('div'); box.className = 'glyph-box';
+                let lbl = document.createElement('span'); lbl.innerText = char === ' ' ? 'SPACE' : char;
+                let cnv = document.createElement('canvas'); cnv.width = 60; cnv.height = 60;
+                box.appendChild(lbl); box.appendChild(cnv); grid.appendChild(box);
+
+                let ctx = cnv.getContext('2d'); let g = activeFontData.glyphs[char];
+                let startX = (60 - (g.width * scale)) / 2; let baselineY = 50;
+                ctx.strokeStyle = '#c59b4e'; ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+                ctx.beginPath();
+                for (let s of g.strokes) {
+                    if (!s.length) continue;
+                    ctx.moveTo(startX + s[0][0] * scale, baselineY - s[0][1] * scale);
+                    for (let i = 1; i < s.length; i++) ctx.lineTo(startX + s[i][0] * scale, baselineY - s[i][1] * scale);
+                }
+                ctx.stroke();
+            }
+        }
+
+        function updateKerningPreview() {
+            if (!activeFontData) return;
+            let c1 = document.getElementById('kern-char-1').value || ' '; let c2 = document.getElementById('kern-char-2').value || ' ';
+            let g1 = getGlyphFromData(c1); let g2 = getGlyphFromData(c2); let kern = getKerning(c1, c2, 1.0);
+            let canvas = document.getElementById('kerning-canvas'); let ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height); let scale = 65; let startX = 140; let baselineY = 120; 
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 1; ctx.beginPath();
+            ctx.moveTo(0, baselineY); ctx.lineTo(canvas.width, baselineY); ctx.stroke();
+
+            function drawG(g, ox, color) {
+                if (!g.strokes) return;
+                ctx.strokeStyle = color; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath();
+                for (let s of g.strokes) {
+                    if (!s.length) continue;
+                    ctx.moveTo(ox + s[0][0] * scale, baselineY - s[0][1] * scale);
+                    for (let i = 1; i < s.length; i++) ctx.lineTo(ox + s[i][0] * scale, baselineY - s[i][1] * scale);
+                }
+                ctx.stroke();
+            }
+            drawG(g1, startX, '#c59b4e'); let nextX = startX + (g1.width * scale) + (kern * scale); drawG(g2, nextX, '#7cd97c');
+            document.getElementById('kern-value-display').innerText = `Offset: ${kern.toFixed(3)}`;
+        }
+
+        let dragCounter = 0;
+        const dragOverlay = document.getElementById('drag-overlay');
+        
+        window.addEventListener('dragenter', (e) => {
+            e.preventDefault();
+            dragCounter++;
+            dragOverlay.style.display = 'flex';
+        });
+        window.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dragCounter--;
+            if (dragCounter === 0) dragOverlay.style.display = 'none';
+        });
+        window.addEventListener('dragover', (e) => {
+            e.preventDefault(); 
+        });
+        window.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dragCounter = 0;
+            dragOverlay.style.display = 'none';
+            const file = e.dataTransfer.files[0];
+            if (file) loadFontFile(file);
+        });
+        
+        document.getElementById('font-upload').addEventListener('change', (e) => { if(e.target.files[0]) loadFontFile(e.target.files[0]); });
+
+        async function loadFontFile(file) {
+            const banner = document.getElementById('status-banner');
+            try {
+                let text = await file.text();
+                if (file.name.toLowerCase().endsWith('.svg')) {
+                    banner.innerText = "Extracting SVG Paths... (This takes a moment)";
+                    banner.style.color = "var(--accent-gold-light)";
+                    await new Promise(r => setTimeout(r, 50));
+                    
+                    rawFontData = extractSvgFont(text);
+                    banner.innerText = "SVG Font Extracted. Compiling Kinematics...";
+                } else {
+                    rawFontData = JSON.parse(text);
+                    banner.innerText = "JSON Font Loaded. Compiling Kinematics...";
+                }
+                banner.style.color = "#7cd97c";
+                rebuildFontAndCompile(true);
+            } catch(err) { 
+                banner.innerText = "ERROR: " + err.message; banner.style.color = "#ff6b6b"; 
+            }
+        }
+
+        async function loadFont() {
+            try {
+                const response = await fetch('ems_allure_upgraded.json');
+                if (!response.ok) throw new Error("File not found");
+                rawFontData = await response.json();
+                document.getElementById('status-banner').innerText = "Font Engine Loaded.";
+                document.getElementById('status-banner').style.color = "var(--accent-gold)";
+                loadSavedState(); updateThemeColors(); rebuildFontAndCompile(false);
+            } catch (e) {
+                console.warn("Local fetch failed.");
+                document.getElementById('status-banner').innerHTML = `<span style="color:#ff6b6b;">Font Blocked. Drop JSON/SVG file.</span>`;
+                updateThemeColors(); renderSandVirtualTwin([]); 
+            }
+        }
+
+        function rebuildFontAndCompile(saveState = true) {
+            if (!rawFontData) return;
+            activeCompileNonce++; let currentNonce = activeCompileNonce;
+            const banner = document.getElementById('status-banner');
+            banner.innerText = "Compiling Calligraphy Physics...";
+            banner.style.color = "var(--accent-gold)";
+            
+            let droopMult = parseFloat(document.getElementById('droop-slider').value) / 100.0;
+
+            setTimeout(() => {
+                if (activeCompileNonce !== currentNonce) return;
+                try {
+                    activeFontData = FontUpgrader.upgrade(rawFontData, droopMult);
+                    updateCompilation(saveState, currentNonce);
+                } catch(e) {
+                    banner.innerText = "COMPILATION ERROR: " + e.message; banner.style.color = "#ff6b6b"; console.error(e);
+                }
+            }, 10);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            const isTyping = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName);
+
+            if (e.ctrlKey && e.key === 'Enter') { 
+                e.preventDefault(); 
+                uploadToController(); 
+            }
+            else if (e.ctrlKey && e.key.toLowerCase() === 's') { 
+                e.preventDefault(); 
+                triggerFileDownload(); 
+            }
+            else if (e.key === ' ' || e.code === 'Space') {
+                if (!isTyping) {
+                    e.preventDefault();
+                    toggleSimulation();
+                }
+            }
+        });
+
+        function getGlyphFromData(char) {
+            if (!activeFontData) return { width: 0.5, strokes: [] };
+            return activeFontData.glyphs[char] || activeFontData.glyphs[' '] || { width: 0.5, strokes: [] };
+        }
+
+        function getKerning(char1, char2, multiplier) {
+            if (!activeFontData || !activeFontData.kerning) return 0;
+            let pair = `${char1.toLowerCase()}-${char2.toLowerCase()}`; 
+            return (activeFontData.kerning[pair] || 0) * multiplier;
+        }
+
+        function getRibbonWidth(text, kernMult, useLigatures) {
+            if (!text) return 0.1; 
+            let width = 0; let previousChar = null; let i = 0;
+            while(i < text.length) {
+                let char = text[i]; let glyphData = null; let step = 1;
+                if (useLigatures && activeFontData && activeFontData.ligatures) {
+                    for(let len = 3; len >= 2; len--) {
+                        if (i + len <= text.length) {
+                            let sub = text.substring(i, i + len);
+                            if (activeFontData.ligatures[sub]) { glyphData = activeFontData.ligatures[sub]; char = sub; step = len; break; }
+                        }
+                    }
+                }
+                if (!glyphData) glyphData = getGlyphFromData(char);
+                let kern = previousChar ? getKerning(previousChar, char.charAt(0), kernMult) : 0;
+                width += (kern + glyphData.width); previousChar = char.slice(-1); i += step;
+            }
+            return width > 0 ? width : 0.1; 
+        }
+
         class DuneWeaverPipeline {
-            constructor(maxRadius = 0.92) {
-                this.maxRadius = maxRadius;
-                this.cartesianPath = [];
-                this.finalPolarPath = [];
-                this.appliedScaleFactor = 1.0;
+            constructor() {
+                this.maxRadius = 1.0; this.cartesianPath = []; this.finalPolarPath = [];
+                this.appliedScaleFactor = 1.0; this.baseCharHeight = 0.16; this.finalCharHeight = 0.16;
+                this.rdpReduced = false;
             }
 
             smartWordWrap(text, maxChars = 14) {
-                let words = text.split(' ');
-                let lines = [], currentLine = [];
-                let currCount = 0;
-                for (let word of words) {
-                    if (word.includes('\n')) {
-                        let parts = word.split('\n');
-                        currentLine.push(parts[0]); lines.push(currentLine.join(' '));
-                        currentLine = [parts[1]]; currCount = parts[1].length;
-                    } else if (currCount + word.length + (currentLine.length ? 1 : 0) > maxChars) {
-                        lines.push(currentLine.join(' ')); currentLine = [word]; currCount = word.length;
-                    } else {
-                        currentLine.push(word); currCount += word.length + 1;
+                let rawLines = text.split('\n'); let wrappedLines = [];
+                for (let line of rawLines) {
+                    if (!line.trim()) { wrappedLines.push(" "); continue; }
+                    let words = line.split(' '); let currentLine = []; let currCount = 0;
+                    for (let word of words) {
+                        if (currCount + word.length + (currentLine.length ? 1 : 0) > maxChars) {
+                            if (currentLine.length) wrappedLines.push(currentLine.join(' '));
+                            currentLine = [word]; currCount = word.length;
+                        } else { currentLine.push(word); currCount += word.length + 1; }
                     }
+                    if (currentLine.length) wrappedLines.push(currentLine.join(' '));
                 }
-                if (currentLine.length) lines.push(currentLine.join(' '));
-                return lines.join('\n');
+                return wrappedLines.join('\n');
             }
 
-            buildGeometry(text, mode = "centered") {
-                if (["circle", "spiral", "sinewave", "ellipse", "petal", "peanut", "squircle"].includes(mode)) {
-                    text = text.replace(/\n/g, " ");
-                } else {
-                    text = this.smartWordWrap(text, 15);
+            simplifyPath(points, epsilon) {
+                if (points.length <= 2) return points;
+                let stack = [[0, points.length - 1]];
+                let keep = new Uint8Array(points.length);
+                keep[0] = 1; keep[points.length - 1] = 1;
+
+                while (stack.length > 0) {
+                    let [startIndex, endIndex] = stack.pop(); let dmax = 0; let index = startIndex;
+                    for (let i = startIndex + 1; i < endIndex; i++) {
+                        if (keep[i]) continue;
+                        let d = this.perpendicularDistance(points[i], points[startIndex], points[endIndex]);
+                        if (d > dmax) { index = i; dmax = d; }
+                    }
+                    if (dmax > epsilon) { keep[index] = 1; stack.push([startIndex, index]); stack.push([index, endIndex]); }
+                }
+                let result = [];
+                for (let i = 0; i < points.length; i++) { if (keep[i]) result.push(points[i]); }
+                return result;
+            }
+
+            perpendicularDistance(p, p1, p2) {
+                let dx = p2[0]-p1[0], dy = p2[1]-p1[1]; let mag = Math.hypot(dx, dy);
+                if(mag === 0) return Math.hypot(p[0]-p1[0], p[1]-p1[1]);
+                return Math.abs(dy*p[0] - dx*p[1] + p2[0]*p1[1] - p2[1]*p1[0]) / mag;
+            }
+
+            resampleCartesian(path, stepDist) {
+                if(path.length < 2) return path;
+                let resampled = [path[0]]; let d = 0;
+                for(let i=1; i<path.length; i++) {
+                    let p0 = path[i-1], p1 = path[i];
+                    if(Number.isNaN(p0[0]) || Number.isNaN(p1[0])) { resampled.push(p1); continue; }
+                    let segLen = Math.hypot(p1[0]-p0[0], p1[1]-p0[1]);
+                    if (segLen === 0) continue;
+                    d += segLen;
+                    while (d >= stepDist) {
+                        d -= stepDist; let t = 1 - (d / segLen);
+                        resampled.push([ p0[0] + (p1[0]-p0[0])*t, p0[1] + (p1[1]-p0[1])*t ]);
+                    }
+                }
+                resampled.push(path[path.length-1]);
+                return resampled;
+            }
+
+            chaikinSmooth(points, passes = 1) {
+                if(points.length < 3) return points;
+                let result = [...points];
+                for(let p=0; p<passes; p++) {
+                    let smoothed = [result[0]];
+                    for(let i=0; i<result.length-1; i++) {
+                        let p0 = result[i], p1 = result[i+1];
+                        if (Number.isNaN(p0[0]) || Number.isNaN(p1[0])) { smoothed.push(p1); continue; }
+                        let dist = Math.hypot(p1[0]-p0[0], p1[1]-p0[1]);
+                        if (dist < 0.005) { smoothed.push(p1); } 
+                        else {
+                            smoothed.push([ 0.75*p0[0] + 0.25*p1[0], 0.75*p0[1] + 0.25*p1[1] ]);
+                            smoothed.push([ 0.25*p0[0] + 0.75*p1[0], 0.25*p0[1] + 0.75*p1[1] ]);
+                        }
+                    }
+                    result = smoothed;
+                }
+                return result;
+            }
+
+            addDroopLine(pathArray, p1, p2, droopAmount) {
+                let dist = Math.hypot(p2[0]-p1[0], p2[1]-p1[1]);
+                if (dist < 0.01) { pathArray.push(p2); return; }
+                let steps = Math.max(5, Math.floor(dist / 0.02));
+                let midX = (p1[0] + p2[0]) / 2; let midY = (p1[1] + p2[1]) / 2 - droopAmount; 
+                for(let i=1; i<=steps; i++) {
+                    let t = i/steps;
+                    let x = (1-t)*(1-t)*p1[0] + 2*(1-t)*t*midX + t*t*p2[0];
+                    let y = (1-t)*(1-t)*p1[1] + 2*(1-t)*t*midY + t*t*p2[1];
+                    pathArray.push([x,y]);
+                }
+            }
+
+            // FIX: Absolute Clamped Bezier for Graceful, Boundary-Safe Swoops
+            createBezier(p0, p3, ang0, ang3, m0, m3) {
+                let R = this.maxRadius * 0.99; // Strict mathematical wall
+                
+                let travelDir = Math.atan2(p3[1]-p0[1], p3[0]-p0[0]);
+                
+                // Anti-Knot Dampening
+                if (Math.cos(ang0 - travelDir) < 0) m0 *= 0.2;
+                if (Math.cos(ang3 - travelDir) < 0) m3 *= 0.2;
+
+                let cp1 = [p0[0] + Math.cos(ang0)*m0, p0[1] + Math.sin(ang0)*m0];
+                let cp2 = [p3[0] - Math.cos(ang3)*m3, p3[1] - Math.sin(ang3)*m3];
+
+                // If control point pushes past table radius, collapse it to the radius
+                let rCp1 = Math.hypot(cp1[0], cp1[1]);
+                if (rCp1 > R) { cp1[0] = (cp1[0]/rCp1)*R; cp1[1] = (cp1[1]/rCp1)*R; }
+                
+                let rCp2 = Math.hypot(cp2[0], cp2[1]);
+                if (rCp2 > R) { cp2[0] = (cp2[0]/rCp2)*R; cp2[1] = (cp2[1]/rCp2)*R; }
+
+                let path = [];
+                let dist = Math.hypot(p3[0]-p0[0], p3[1]-p0[1]);
+                let steps = Math.max(20, Math.floor(dist * 200));
+                
+                for(let i=0; i<=steps; i++) {
+                    let t = i/steps; let mt = 1-t;
+                    let x = mt*mt*mt*p0[0] + 3*mt*mt*t*cp1[0] + 3*mt*t*t*cp2[0] + t*t*t*p3[0];
+                    let y = mt*mt*mt*p0[1] + 3*mt*mt*t*cp1[1] + 3*mt*t*t*cp2[1] + t*t*t*p3[1];
+
+                    // Absolute Hard Limit to guarantee no glass clipping
+                    let rCurve = Math.hypot(x, y);
+                    if (rCurve > R) { x = (x/rCurve)*R; y = (y/rCurve)*R; }
+
+                    path.push([x,y]);
+                }
+                return path;
+            }
+
+            _appendCharacterStrokes(targetPath, glyphData, currentX, currentY, scaleX, scaleY, activeDroop, lastPt, prevGlyphData) {
+                // Return lastPt directly so spaces dont generate geometry, allowing the engine
+                // to correctly calculate word-jump distances between printable characters.
+                if (!glyphData.strokes || glyphData.strokes.length === 0) {
+                    return lastPt;
                 }
 
-                let lines = text.split('\n');
-                let maxLineLen = Math.max(...lines.map(l => l.length), 1);
-                let numLines = lines.length;
-                let baseHeight = 0.16;
+                let entryAbs = glyphData.entry_point ? 
+                    [currentX + (glyphData.entry_point[0] * scaleX), currentY + (glyphData.entry_point[1] * scaleY)] :
+                    [currentX + (glyphData.strokes[0][0][0] * scaleX), currentY + (glyphData.strokes[0][0][1] * scaleY)];
 
-                // Suggestion 4: Optimize Math Pow
+                let exitAbs = glyphData.exit_point ? 
+                    [currentX + (glyphData.exit_point[0] * scaleX), currentY + (glyphData.exit_point[1] * scaleY)] : null;
+
+                if (lastPt) {
+                    let physDist = Math.hypot(entryAbs[0] - lastPt[0], entryAbs[1] - lastPt[1]);
+                    
+                    let curDroop = 0;
+                    // Droop jump between words ONLY. Pure straight-lines inside words.
+                    // Because spaces are structurally skipped, inter-word distances exceed 0.15 easily
+                    if (physDist > scaleX * 0.15) {
+                        curDroop = activeDroop; 
+                    } else {
+                        curDroop = 0; 
+                    }
+
+                    this.addDroopLine(targetPath, lastPt, entryAbs, curDroop);
+                } else { targetPath.push(entryAbs); }
+
+                let lastStrokePt = entryAbs;
+                for (let stroke of glyphData.strokes) {
+                    if (stroke.length > 0) {
+                        let absStroke = stroke.map(pt => [currentX + (pt[0] * scaleX), currentY + (pt[1] * scaleY)]);
+
+                        if (Math.hypot(absStroke[0][0] - lastStrokePt[0], absStroke[0][1] - lastStrokePt[1]) > 0.01) {
+                            this.addDroopLine(targetPath, lastStrokePt, absStroke[0], 0); 
+                        }
+                        for (let pt of absStroke) { targetPath.push(pt); lastStrokePt = pt; }
+                    }
+                }
+
+                if (!exitAbs) exitAbs = lastStrokePt;
+                else {
+                    if(Math.hypot(exitAbs[0] - lastStrokePt[0], exitAbs[1] - lastStrokePt[1]) > 0.01){
+                        this.addDroopLine(targetPath, lastStrokePt, exitAbs, 0); 
+                    }
+                }
+                return exitAbs;
+            }
+
+            buildGeometry(text, options) {
+                if (!activeFontData) return;
+                let { mode, just, kernMult, leadMult, droopVal, wipe, reverse, ballDiam, tableDiam, wipeQuality, margin, smoothCorners, useLigatures } = options;
+
+                this.rdpReduced = false;
+                this.maxRadius = 1.0 - (margin / 100.0);
+
+                if (["circle", "spiral", "sinewave", "ellipse", "petal", "peanut", "squircle"].includes(mode)) text = text.replace(/\n/g, " ");
+                else text = this.smartWordWrap(text, 15);
+                if (!text.trim()) text = " "; 
+
+                let lines = text.split('\n'); let baseHeight = 0.16;
+
                 let getParamX = (u, m) => {
                     if (m === "sinewave") return (u / (2 * Math.PI)) * 1.6 - 0.8;
-                    let ang = -u; 
+                    let ang = (Math.PI / 2) - u; 
                     if (m === "ellipse") return 0.85 * Math.cos(ang);
                     if (m === "petal") return (0.65 + 0.08 * Math.cos(5 * ang)) * Math.cos(ang);
                     if (m === "peanut") return (0.60 + 0.25 * Math.cos(2 * ang)) * Math.cos(ang);
-                    if (m === "squircle") {
-                        let s = Math.sin(2 * ang);
-                        return 0.8 * (1 - 0.15 * (s * s)) * Math.cos(ang);
-                    }
+                    if (m === "squircle") { let s = Math.sin(2 * ang); return 0.8 * (1 - 0.15 * (s * s)) * Math.cos(ang); }
                 };
-                
                 let getParamY = (u, m) => {
                     if (m === "sinewave") return 0.32 * Math.sin(5.0 * ((u / (2 * Math.PI)) * 1.6 - 0.8));
-                    let ang = -u;
+                    let ang = (Math.PI / 2) - u;
                     if (m === "ellipse") return 0.45 * Math.sin(ang);
                     if (m === "petal") return (0.65 + 0.08 * Math.cos(5 * ang)) * Math.sin(ang);
                     if (m === "peanut") return (0.60 + 0.25 * Math.cos(2 * ang)) * Math.sin(ang);
-                    if (m === "squircle") {
-                        let s = Math.sin(2 * ang);
-                        return 0.8 * (1 - 0.15 * (s * s)) * Math.sin(ang);
-                    }
+                    if (m === "squircle") { let s = Math.sin(2 * ang); return 0.8 * (1 - 0.15 * (s * s)) * Math.sin(ang); }
                 };
 
-                let charHeight = baseHeight;
-                let scaleFactorX = charHeight * 1.1; 
-                let lineSpacing = charHeight * 1.65;
-                let charSpacingGap = charHeight * 0.35; 
-                let stiltHeight = charHeight * 0.15; 
-                let circleRadius = 0.60;
-                let spiralRawSum = 0;
-
-                let totalArcLengthParam = 0;
-                let tValsParam = [];
-                let arcLengthsParam = [];
+                let charHeight = baseHeight; let scaleFactorX = charHeight; let lineSpacing = charHeight * 1.35 * leadMult; let circleRadius = this.maxRadius - 0.1; 
+                let totalArcLengthParam = 0; let tValsParam = []; let arcLengthsParam = [];
 
                 if (["sinewave", "ellipse", "petal", "peanut", "squircle"].includes(mode)) {
-                    let curveSteps = 1000;
-                    
-                    let tStartParam = 0; 
-                    let tEndParam = 2 * Math.PI;
-                    let dtCurve = (tEndParam - tStartParam) / curveSteps;
-                    
-                    arcLengthsParam.push(0);
-                    tValsParam.push(tStartParam);
-
+                    let curveSteps = 1000; let tStartParam = 0; let tEndParam = 2 * Math.PI; let dtCurve = (tEndParam - tStartParam) / curveSteps;
+                    arcLengthsParam.push(0); tValsParam.push(tStartParam);
                     for (let i = 1; i <= curveSteps; i++) {
-                        let t0 = tStartParam + (i - 1) * dtCurve;
-                        let t1 = tStartParam + i * dtCurve;
-                        let x0 = getParamX(t0, mode); let y0 = getParamY(t0, mode);
-                        let x1 = getParamX(t1, mode); let y1 = getParamY(t1, mode);
-                        
-                        let dx = x1 - x0;
-                        let dy = y1 - y0;
-                        totalArcLengthParam += Math.sqrt((dx * dx) + (dy * dy));
-                        
-                        arcLengthsParam.push(totalArcLengthParam);
-                        tValsParam.push(t1);
+                        let t0 = tStartParam + (i - 1) * dtCurve; let t1 = tStartParam + i * dtCurve;
+                        let x0 = getParamX(t0, mode); let y0 = getParamY(t0, mode); let x1 = getParamX(t1, mode); let y1 = getParamY(t1, mode);
+                        totalArcLengthParam += Math.hypot(x1-x0, y1-y0); arcLengthsParam.push(totalArcLengthParam); tValsParam.push(t1);
                     }
-
-                    let paramRawSum = 0;
-                    for (let char of text) {
-                        paramRawSum += ProportionalRetracedFont.getGlyph(char).width * 1.1 + 0.35;
-                    }
-                    paramRawSum -= 0.35; 
-                    if (mode !== "sinewave") paramRawSum += 1.0; 
-
+                    let paramRawSum = getRibbonWidth(text, kernMult, useLigatures);
                     charHeight = totalArcLengthParam / paramRawSum;
-                    if (charHeight > 0.25) charHeight = 0.25; 
-                    
-                    scaleFactorX = charHeight * 1.1; 
-                    charSpacingGap = charHeight * 0.35; 
-                    stiltHeight = charHeight * 0.15; 
+                    if (charHeight > 0.25) charHeight = 0.25; scaleFactorX = charHeight; 
                 } else if (mode === "circle") {
-                    let circleRawSum = 0;
-                    for (let char of text) {
-                        circleRawSum += ProportionalRetracedFont.getGlyph(char).width * 1.1 + 0.35;
-                    }
-                    charHeight = (2 * Math.PI * this.maxRadius) / (circleRawSum + 2 * Math.PI);
+                    let circleRawSum = getRibbonWidth(text, kernMult, useLigatures);
+                    charHeight = (2 * Math.PI * this.maxRadius) / circleRawSum;
                     if (charHeight > 0.32) charHeight = 0.32; 
-                    circleRadius = this.maxRadius - charHeight;
-                    scaleFactorX = charHeight * 1.1; 
-                    charSpacingGap = charHeight * 0.35; 
-                    stiltHeight = charHeight * 0.15;
+                    circleRadius = this.maxRadius - charHeight; scaleFactorX = charHeight; 
                 } else if (mode === "spiral") {
-                    for (let char of text) {
-                        spiralRawSum += ProportionalRetracedFont.getGlyph(char).width * 1.1 + 0.35;
-                    }
-                    let r_max = this.maxRadius;
-                    let r_min_target = 0.25; 
-                    let sqHeight = (Math.PI * ((r_max * r_max) - (r_min_target * r_min_target))) / (2.5 * spiralRawSum);
-                    charHeight = Math.sqrt(sqHeight);
-                    if (charHeight > 0.35) charHeight = 0.35;
-                    scaleFactorX = charHeight * 1.1;
-                    charSpacingGap = charHeight * 0.35;
-                    stiltHeight = charHeight * 0.15;
-                } else {
-                    if (numLines === 1) {
-                        baseHeight = maxLineLen <= 5 ? 0.30 : (maxLineLen <= 9 ? 0.20 : 0.14);
-                    } else {
-                        baseHeight = numLines >= 4 ? 0.08 : (numLines === 3 ? 0.10 : 0.13);
-                    }
-                    lines = lines.map(l => " " + l + " ");
-                    charHeight = baseHeight;
-                    scaleFactorX = charHeight * 1.1; 
-                    lineSpacing = charHeight * 1.65;
-                    charSpacingGap = charHeight * 0.35; 
-                    stiltHeight = charHeight * 0.15;
-                }
+                    let spiralRawSum = getRibbonWidth(text, kernMult, useLigatures);
+                    let sqHeight = (Math.PI * ((this.maxRadius * this.maxRadius) - (0.25 * 0.25))) / (2.5 * spiralRawSum);
+                    charHeight = Math.sqrt(sqHeight); if (charHeight > 0.35) charHeight = 0.35; scaleFactorX = charHeight;
+                } else { charHeight = baseHeight; scaleFactorX = charHeight; lineSpacing = charHeight * 1.5 * leadMult; }
 
-                this.cartesianPath = [];
-                let rawRibbon = [];
+                this.baseCharHeight = charHeight; this.cartesianPath = []; let rawRibbon = []; let activeDroop = droopVal * charHeight;
 
                 if (mode === "centered") {
+                    let linesMaxWidth = Math.max(...lines.map(l => getRibbonWidth(l, kernMult, useLigatures) * scaleFactorX));
                     for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
-                        let line = lines[lineIdx];
-                        let currentLineY = -lineIdx * lineSpacing;
-                        let baseLineY = currentLineY - stiltHeight;
-                        
-                        let totalLineWidth = 0;
-                        for (let i = 0; i < line.length; i++) {
-                            let glyphData = ProportionalRetracedFont.getGlyph(line[i]);
-                            totalLineWidth += (glyphData.width * scaleFactorX);
-                            if (i < line.length - 1) totalLineWidth += charSpacingGap;
-                        }
+                        let line = lines[lineIdx]; let currentLineY = -lineIdx * lineSpacing;
+                        let totalLineWidth = getRibbonWidth(line, kernMult, useLigatures) * scaleFactorX;
+                        let currentX = 0;
+                        if (just === "center") currentX = -totalLineWidth / 2.0;
+                        else if (just === "left") currentX = -linesMaxWidth / 2.0;
+                        else if (just === "right") currentX = (linesMaxWidth / 2.0) - totalLineWidth;
 
-                        let currentX = -totalLineWidth / 2.0;
-
-                        for (let i = 0; i < line.length; i++) {
-                            let char = line[i];
-                            let glyphData = ProportionalRetracedFont.getGlyph(char);
-                            let gw = glyphData.width * scaleFactorX;
-
-                            let currentScaleY = charHeight;
-                            let currentScaleX = scaleFactorX;
-                            let transX = currentX;
-
-                            if (glyphData.path.length > 0) {
-                                let entryPointX = transX + (glyphData.path[0][0] * currentScaleX);
-                                
-                                this.cartesianPath.push([entryPointX, baseLineY]);
-                                
-                                for (let pt of glyphData.path) {
-                                    this.cartesianPath.push([transX + (pt[0] * currentScaleX), currentLineY + (pt[1] * currentScaleY)]);
+                        let previousChar = null; let lastPt = null; let prevGlyphData = null; let i = 0;
+                        while(i < line.length) {
+                            let char = line[i]; let glyphData = null; let step = 1;
+                            if (useLigatures && activeFontData.ligatures) {
+                                for(let len = 3; len >= 2; len--) {
+                                    if (i + len <= line.length) {
+                                        let sub = line.substring(i, i + len);
+                                        if (activeFontData.ligatures[sub]) { glyphData = activeFontData.ligatures[sub]; char = sub; step = len; break; }
+                                    }
                                 }
-                                
-                                let exitPointX = transX + (glyphData.path[glyphData.path.length - 1][0] * currentScaleX);
-                                
-                                this.cartesianPath.push([exitPointX, baseLineY]);
-                                this.cartesianPath.push([transX + gw, baseLineY]);
-                            } else {
-                                this.cartesianPath.push([transX, baseLineY]);
-                                this.cartesianPath.push([transX + gw, baseLineY]);
                             }
-                            currentX += gw + charSpacingGap;
+                            if (!glyphData) glyphData = getGlyphFromData(char);
+
+                            let kern = previousChar ? getKerning(previousChar, char.charAt(0), kernMult) : 0;
+                            currentX += (kern * scaleFactorX);
+                            lastPt = this._appendCharacterStrokes(this.cartesianPath, glyphData, currentX, currentLineY, scaleFactorX, charHeight, activeDroop, lastPt, prevGlyphData);
+                            currentX += (glyphData.width * scaleFactorX); previousChar = char.slice(-1); prevGlyphData = glyphData; i += step;
                         }
 
-                        if (lineIdx < lines.length - 1) {
-                            let nextLine = lines[lineIdx + 1];
-                            let nextTotalWidth = 0;
-                            for (let i = 0; i < nextLine.length; i++) {
-                                let glyphData = ProportionalRetracedFont.getGlyph(nextLine[i]);
-                                nextTotalWidth += (glyphData.width * scaleFactorX);
-                                if (i < nextLine.length - 1) nextTotalWidth += charSpacingGap;
-                            }
-                            let nextStartX = -nextTotalWidth / 2.0;
-
-                            this.cartesianPath.push([currentX - charSpacingGap, baseLineY]);
-                            let nextBaseLineY = -(lineIdx + 1) * lineSpacing - stiltHeight;
-                            this.cartesianPath.push([currentX - charSpacingGap, nextBaseLineY]);
-                            this.cartesianPath.push([nextStartX, nextBaseLineY]);
-                        }
+                        if (lineIdx < lines.length - 1) { this.cartesianPath.push([NaN, NaN]); }
                     }
-                    
                     if (this.cartesianPath.length) {
-                        let yVals = this.cartesianPath.map(p => p[1]);
+                        let yVals = [];
+                        for(let p of this.cartesianPath) { if(!Number.isNaN(p[1])) yVals.push(p[1]); }
                         let yOffset = -((Math.min(...yVals) + Math.max(...yVals)) / 2.0);
-                        this.cartesianPath = this.cartesianPath.map(p => [p[0], p[1] + yOffset]);
+                        let offsetPath = [];
+                        for(let p of this.cartesianPath) { offsetPath.push(Number.isNaN(p[0]) ? p : [p[0], p[1] + yOffset]); }
+                        this.cartesianPath = offsetPath;
                     }
                 } else {
-                    let totalRibbonWidth = 0;
-                    let ribbonDataMap = [];
-                    for (let char of text) {
-                        let glyphData = ProportionalRetracedFont.getGlyph(char);
-                        ribbonDataMap.push({ char, width: glyphData.width * scaleFactorX });
-                        totalRibbonWidth += (glyphData.width * scaleFactorX) + charSpacingGap;
-                    }
-
-                    let accumulatedX = 0.0;
-                    for (let item of ribbonDataMap) {
-                        let glyphData = ProportionalRetracedFont.getGlyph(item.char);
-                        let baseLineY = -stiltHeight; 
-                        
-                        if (glyphData.path.length > 0) {
-                            let entryX = accumulatedX + (glyphData.path[0][0] * scaleFactorX);
-                            
-                            rawRibbon.push([entryX, baseLineY]);
-                            
-                            for (let pt of glyphData.path) {
-                                rawRibbon.push([accumulatedX + (pt[0] * scaleFactorX), pt[1] * charHeight]);
+                    let accumulatedX = 0.0; let previousChar = null; let lastPt = null; let prevGlyphData = null; let i = 0;
+                    while (i < text.length) {
+                        let char = text[i]; let glyphData = null; let step = 1;
+                        if (useLigatures && activeFontData.ligatures) {
+                            for(let len = 3; len >= 2; len--) {
+                                if (i + len <= text.length) {
+                                    let sub = text.substring(i, i + len);
+                                    if (activeFontData.ligatures[sub]) { glyphData = activeFontData.ligatures[sub]; char = sub; step = len; break; }
+                                }
                             }
-                            
-                            let exitX = accumulatedX + (glyphData.path[glyphData.path.length - 1][0] * scaleFactorX);
-                            
-                            rawRibbon.push([exitX, baseLineY]);
-                            rawRibbon.push([accumulatedX + item.width, baseLineY]);
-                        } else {
-                            rawRibbon.push([accumulatedX, baseLineY]);
-                            rawRibbon.push([accumulatedX + item.width, baseLineY]);
                         }
-                        accumulatedX += item.width + charSpacingGap;
+                        if (!glyphData) glyphData = getGlyphFromData(char);
+
+                        let kern = previousChar ? getKerning(previousChar, char.charAt(0), kernMult) : 0;
+                        accumulatedX += (kern * scaleFactorX);
+                        lastPt = this._appendCharacterStrokes(rawRibbon, glyphData, accumulatedX, 0.0, scaleFactorX, charHeight, activeDroop, lastPt, prevGlyphData);
+                        accumulatedX += (glyphData.width * scaleFactorX); previousChar = char.slice(-1); prevGlyphData = glyphData; i += step;
                     }
+                    
+                    let denseRibbon = [];
+                    for(let i=0; i<rawRibbon.length-1; i++) {
+                        let p1 = rawRibbon[i], p2 = rawRibbon[i+1]; let d = Math.hypot(p2[0]-p1[0], p2[1]-p1[1]);
+                        let steps = Math.max(1, Math.floor(d / 0.03)); 
+                        for(let s=0; s<steps; s++) denseRibbon.push([p1[0] + (s/steps)*(p2[0]-p1[0]), p1[1] + (s/steps)*(p2[1]-p1[1])]);
+                    }
+                    if (rawRibbon.length) denseRibbon.push(rawRibbon[rawRibbon.length-1]);
+                    rawRibbon = denseRibbon;
 
                     let totalLen = accumulatedX > 0 ? accumulatedX : 1.0;
 
                     if (mode === "circle") {
-                        let gapStart = accumulatedX;
-                        let gapEnd = 2 * Math.PI * circleRadius;
-                        let gapSteps = Math.max(10, Math.floor((gapEnd - gapStart) / 0.1));
-                        for (let i = 0; i <= gapSteps; i++) {
-                            let x = gapStart + (gapEnd - gapStart) * (i / gapSteps);
-                            rawRibbon.push([x, -stiltHeight]);
-                        }
-                        
+                        let circleRawSum = getRibbonWidth(text, kernMult, useLigatures);
+                        let totalAngle = circleRawSum * scaleFactorX / circleRadius;
+                        let startAngle = (Math.PI / 2) + (totalAngle / 2);
                         for (let pt of rawRibbon) {
-                            let angle = (Math.PI / 2) - (pt[0] / circleRadius);
+                            let angle = startAngle - (pt[0] / circleRadius);
                             this.cartesianPath.push([(circleRadius + pt[1]) * Math.cos(angle), (circleRadius + pt[1]) * Math.sin(angle)]);
                         }
                     } else if (mode === "spiral") {
-                        let trackSpacing = charHeight * 2.5; 
-                        let bTurnGrowth = trackSpacing / (2 * Math.PI);
-                        let actualL = spiralRawSum * charHeight;
-                        let r_min_sq = (this.maxRadius * this.maxRadius) - (actualL * trackSpacing / Math.PI);
-                        let actual_r_min = r_min_sq > 0 ? Math.sqrt(r_min_sq) : 0.25;
-                        let startTheta = actual_r_min / bTurnGrowth;
+                        let bTurnGrowth = (charHeight * 2.5) / (2 * Math.PI);
                         let maxTheta = this.maxRadius / bTurnGrowth;
-
                         for (let pt of rawRibbon) {
                             let thetaSq = (maxTheta * maxTheta) - (2 * pt[0] / bTurnGrowth);
                             let theta = thetaSq > 0 ? Math.sqrt(thetaSq) : 0;
-                            let baseR = bTurnGrowth * theta;
-                            let angle = (Math.PI / 2) + theta; 
-                            
+                            let baseR = bTurnGrowth * theta; let angle = (Math.PI / 2) + theta; 
                             let tx = -(bTurnGrowth * Math.cos(angle) - baseR * Math.sin(angle));
                             let ty = -(bTurnGrowth * Math.sin(angle) + baseR * Math.cos(angle));
-                            let mag = Math.sqrt((tx * tx) + (ty * ty));
-                            
-                            let nx = -ty / mag;
-                            let ny = tx / mag;
-
-                            this.cartesianPath.push([
-                                baseR * Math.cos(angle) + pt[1] * nx, 
-                                baseR * Math.sin(angle) + pt[1] * ny
-                            ]);
+                            let mag = Math.hypot(tx, ty); let nx = -ty / mag; let ny = tx / mag;
+                            this.cartesianPath.push([baseR * Math.cos(angle) + pt[1] * nx, baseR * Math.sin(angle) + pt[1] * ny]);
                         }
                     } else if (["sinewave", "ellipse", "petal", "peanut", "squircle"].includes(mode)) {
                         let startArc = 0;
-                        if (totalLen < totalArcLengthParam) {
-                            startArc = (totalArcLengthParam - totalLen) / 2.0;
-                        }
-
-                        if (mode !== "sinewave") {
-                            let gapStart = accumulatedX;
-                            let gapEnd = totalArcLengthParam;
-                            let gapSteps = Math.max(10, Math.floor((gapEnd - gapStart) / 0.1));
-                            
-                            if (gapEnd > gapStart) {
-                                let traceY = -stiltHeight;
-                                rawRibbon.push([gapStart, traceY]);
-                                for (let i = 0; i <= gapSteps; i++) {
-                                    let x = gapStart + (gapEnd - gapStart) * (i / gapSteps);
-                                    rawRibbon.push([x, traceY]);
-                                }
-                                rawRibbon.push([gapEnd, traceY]);
-                            }
-                        }
-
+                        if (mode === "sinewave") { if (totalLen < totalArcLengthParam) startArc = (totalArcLengthParam - totalLen) / 2.0; } 
+                        else { startArc = totalArcLengthParam - (totalLen / 2.0); while (startArc < 0) startArc += totalArcLengthParam; }
                         for (let pt of rawRibbon) {
                             let targetArc = startArc + pt[0];
-                            if (mode !== "sinewave") {
-                                targetArc = targetArc % totalArcLengthParam;
-                            } else {
-                                if (targetArc > totalArcLengthParam) targetArc = totalArcLengthParam;
-                            }
-                            
-                            let tStartParam = 0; 
-                            let tActual = tStartParam;
-
+                            if (mode !== "sinewave") { targetArc = targetArc % totalArcLengthParam; if (targetArc < 0) targetArc += totalArcLengthParam; } 
+                            else if (targetArc > totalArcLengthParam) targetArc = totalArcLengthParam;
+                            let tActual = 2 * Math.PI; 
                             for (let i = 0; i < arcLengthsParam.length - 1; i++) {
                                 if (targetArc >= arcLengthsParam[i] && targetArc <= arcLengthsParam[i+1]) {
                                     let frac = (targetArc - arcLengthsParam[i]) / (arcLengthsParam[i+1] - arcLengthsParam[i]);
-                                    tActual = tValsParam[i] + frac * (tValsParam[i+1] - tValsParam[i]);
-                                    break;
+                                    tActual = tValsParam[i] + frac * (tValsParam[i+1] - tValsParam[i]); break;
                                 }
                             }
-
-                            let cxBase = getParamX(tActual, mode);
-                            let cyBase = getParamY(tActual, mode);
-
-                            let dt = 0.05; 
-                            let cx_next = getParamX(tActual + dt, mode);
-                            let cy_next = getParamY(tActual + dt, mode);
-                            let cx_prev = getParamX(tActual - dt, mode);
-                            let cy_prev = getParamY(tActual - dt, mode);
-
-                            let dx = cx_next - cx_prev;
-                            let dy = cy_next - cy_prev;
-                            let mag = Math.sqrt((dx * dx) + (dy * dy)) || 0.001;
-                            
-                            let nx = -dy / mag;
-                            let ny = dx / mag;
-
-                            this.cartesianPath.push([cxBase + pt[1] * nx, cyBase + pt[1] * ny]);
+                            let cxBase = getParamX(tActual, mode); let cyBase = getParamY(tActual, mode);
+                            let dt = 0.05; let dx = getParamX(tActual + dt, mode) - getParamX(tActual - dt, mode);
+                            let dy = getParamY(tActual + dt, mode) - getParamY(tActual - dt, mode);
+                            let mag = Math.hypot(dx, dy) || 0.001;
+                            this.cartesianPath.push([cxBase + pt[1] * (-dy/mag), cyBase + pt[1] * (dx/mag)]);
                         }
                     }
                 }
 
                 if (this.cartesianPath.length) {
-                    let maxRadiusDetected = Math.max(...this.cartesianPath.map(pt => Math.sqrt((pt[0] * pt[0]) + (pt[1] * pt[1]))));
-                    if (maxRadiusDetected > this.maxRadius) {
-                        this.appliedScaleFactor = this.maxRadius / maxRadiusDetected;
-                        this.cartesianPath = this.cartesianPath.map(pt => [pt[0] * this.appliedScaleFactor, pt[1] * this.appliedScaleFactor]);
-                    } else {
-                        this.appliedScaleFactor = 1.0;
+                    if (reverse) this.cartesianPath.reverse();
+
+                    let maxRadiusDetected = 0;
+                    for (let pt of this.cartesianPath) {
+                        if (Number.isNaN(pt[0])) continue;
+                        let currentR = Math.hypot(pt[0], pt[1]);
+                        if (currentR > maxRadiusDetected) maxRadiusDetected = currentR;
                     }
+
+                    let autoScaleFactor = maxRadiusDetected > 0 ? (this.maxRadius * 0.99) / maxRadiusDetected : 1.0;
+                    if (currentScaleStrategy === 'auto') { this.appliedScaleFactor = autoScaleFactor; } 
+                    else { this.appliedScaleFactor = autoScaleFactor * currentScaleStrategy; }
+                    
+                    let scaledPath = [];
+                    for (let pt of this.cartesianPath) {
+                        if (!Number.isNaN(pt[0])) { scaledPath.push([pt[0] * this.appliedScaleFactor, pt[1] * this.appliedScaleFactor]); }
+                        else { scaledPath.push(pt); }
+                    }
+                    this.cartesianPath = scaledPath;
+                    this.finalCharHeight = this.baseCharHeight * this.appliedScaleFactor;
+
+                    let segments = []; let currentSeg = [];
+                    for(let pt of this.cartesianPath) {
+                        if(Number.isNaN(pt[0])) {
+                            if(currentSeg.length > 0) segments.push(currentSeg);
+                            currentSeg = [];
+                        } else { currentSeg.push(pt); }
+                    }
+                    if(currentSeg.length > 0) segments.push(currentSeg);
+
+                    for(let i=0; i<segments.length; i++) {
+                        segments[i] = this.resampleCartesian(segments[i], 0.002); 
+                        if(smoothCorners) { segments[i] = this.chaikinSmooth(segments[i], 3); } 
+                        if(segments[i].length > 6000) {
+                            segments[i] = this.simplifyPath(segments[i], 0.0002);
+                            this.rdpReduced = true;
+                        }
+                    }
+
+                    segments = segments.filter(seg => seg.length >= 2);
+
+                    let resolvedPath = [];
+                    let R = this.maxRadius * 0.99; 
+                    
+                    for(let i=0; i<segments.length; i++) {
+                        let seg = segments[i];
+
+                        if (i > 0) {
+                            let pPrev = resolvedPath[resolvedPath.length - 1];
+                            let pNext = seg[0];
+
+                            let thPrev = Math.atan2(pPrev[1], pPrev[0]);
+                            let thNext = Math.atan2(pNext[1], pNext[0]);
+
+                            let angleDiff = thNext - thPrev;
+                            while(angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+                            while(angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+
+                            let arcDir = Math.sign(angleDiff) || 1;
+
+                            // Closest Perimeter Points
+                            let perimOut = [R * Math.cos(thPrev), R * Math.sin(thPrev)];
+                            let perimIn = [R * Math.cos(thNext), R * Math.sin(thNext)];
+
+                            // Fixed Exit Tangent
+                            let idxOut = Math.min(15, resolvedPath.length - 1);
+                            let textExitTang = Math.atan2(pPrev[1] - resolvedPath[resolvedPath.length - 1 - idxOut][1], pPrev[0] - resolvedPath[resolvedPath.length - 1 - idxOut][0]);
+                            let arriveTangOut = thPrev + arcDir * Math.PI/2;
+                            let distOut = Math.hypot(pPrev[0]-perimOut[0], pPrev[1]-perimOut[1]);
+                            
+                            // Prevent text approach curve from diving deep
+                            let mTextOut = Math.min(distOut * 0.4, 0.15);
+                            let mPerimOut = distOut * 0.5;
+
+                            // 1. Swoop OUT from Text to Exact Closest Perimeter Point
+                            let swoopOut = this.createBezier(pPrev, perimOut, textExitTang, arriveTangOut, mTextOut, mPerimOut);
+                            for(let pt of swoopOut) resolvedPath.push(pt);
+
+                            // 2. Trace Outer Perimeter EXACTLY
+                            let arcSteps = Math.max(10, Math.floor(Math.abs(angleDiff) * 50));
+                            for(let a=1; a<=arcSteps; a++) {
+                                let curA = thPrev + (angleDiff * (a/arcSteps));
+                                resolvedPath.push([R * Math.cos(curA), R * Math.sin(curA)]);
+                            }
+
+                            // Fixed Entry Tangent
+                            let idxIn = Math.min(15, seg.length - 1);
+                            let textEntryTang = Math.atan2(seg[idxIn][1] - seg[0][1], seg[idxIn][0] - seg[0][0]);
+                            let leaveTangIn = thNext + arcDir * Math.PI/2;
+                            let distIn = Math.hypot(pNext[0]-perimIn[0], pNext[1]-perimIn[1]);
+                            
+                            // Prevent text approach curve from diving deep
+                            let mPerimIn = distIn * 0.5;
+                            let mTextIn = Math.min(distIn * 0.4, 0.15);
+
+                            // 3. Swoop IN from Exact Closest Perimeter Point to Text
+                            let swoopIn = this.createBezier(perimIn, pNext, leaveTangIn, textEntryTang, mPerimIn, mTextIn);
+                            for(let pt of swoopIn) resolvedPath.push(pt);
+                            
+                            for(let pt of seg) resolvedPath.push(pt);
+
+                        } else {
+                            // Initial Entry Swoop
+                            let pNext = seg[0];
+                            let thNext = Math.atan2(pNext[1], pNext[0]);
+                            let perimIn = [R * Math.cos(thNext), R * Math.sin(thNext)];
+                            
+                            let idxIn = Math.min(15, seg.length - 1);
+                            let textEntryTang = Math.atan2(seg[idxIn][1] - seg[0][1], seg[idxIn][0] - seg[0][0]);
+                            let distIn = Math.hypot(pNext[0]-perimIn[0], pNext[1]-perimIn[1]);
+                            
+                            let angleDiff = thNext - 0;
+                            while(angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+                            while(angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+                            let arcDir = Math.sign(angleDiff) || 1;
+                            
+                            let arcSteps = Math.max(10, Math.floor(Math.abs(angleDiff) * 50));
+                            for(let a=0; a<=arcSteps; a++) {
+                                let curA = 0 + (angleDiff * (a/arcSteps));
+                                resolvedPath.push([R * Math.cos(curA), R * Math.sin(curA)]);
+                            }
+
+                            let leaveTangIn = thNext + arcDir * Math.PI/2;
+                            let mPerimIn = distIn * 0.5;
+                            let mTextIn = Math.min(distIn * 0.4, 0.15);
+
+                            let swoopIn = this.createBezier(perimIn, pNext, leaveTangIn, textEntryTang, mPerimIn, mTextIn);
+                            for(let pt of swoopIn) resolvedPath.push(pt);
+                            
+                            for(let pt of seg) resolvedPath.push(pt);
+                        }
+                    }
+                    this.cartesianPath = resolvedPath;
+
+                    let prefixPath = []; let textStart = this.cartesianPath[0];
+                    let targetAngle = Math.atan2(textStart[1], textStart[0]);
+                    if (targetAngle < 0) targetAngle += 2 * Math.PI;
+                    
+                    if (wipe) {
+                        let physicalRadius = tableDiam / 2.0; let ballFraction = ballDiam / physicalRadius;
+                        let wipeSpacing = (ballFraction * 0.8) / (wipeQuality / 100.0); 
+                        let turns = this.maxRadius / wipeSpacing; let steps = Math.floor(turns * 100); 
+                        
+                        for(let i=0; i<=steps; i++) {
+                            let r = (i/steps) * (this.maxRadius * 0.99); 
+                            let theta = (i/steps) * turns * 2 * Math.PI; 
+                            prefixPath.push([r * Math.cos(theta), r * Math.sin(theta)]);
+                        }
+                        
+                        let spiralEndAngle = (turns * 2 * Math.PI) % (2 * Math.PI);
+                        let angleDiff = targetAngle - spiralEndAngle;
+                        while(angleDiff < 0) angleDiff += 2 * Math.PI;
+                        
+                        let routeSteps = Math.max(10, Math.floor(angleDiff * 30));
+                        for(let i=1; i<=routeSteps; i++) {
+                            let theta = spiralEndAngle + (i/routeSteps)*angleDiff;
+                            prefixPath.push([(this.maxRadius*0.99) * Math.cos(theta), (this.maxRadius*0.99) * Math.sin(theta)]);
+                        }
+                    }
+
+                    let frameR = this.maxRadius * 0.99;
+                    for(let i=1; i<=150; i++) {
+                        let theta = targetAngle + (i/150) * 2 * Math.PI;
+                        prefixPath.push([frameR * Math.cos(theta), frameR * Math.sin(theta)]);
+                    }
+
+                    let fullPath = [];
+                    for(let p of prefixPath) fullPath.push(p);
+                    for(let p of this.cartesianPath) fullPath.push(p);
+                    this.cartesianPath = fullPath;
                 }
             }
 
             processPipeline() {
-                this.finalPolarPath = [];
-                let lastTheta = 0.0;
-
+                let rawPolarPath = []; let lastTheta = 0.0;
                 if (!this.cartesianPath.length) return;
-
+                
                 let [txtStartX, txtStartY] = this.cartesianPath[0];
                 let targetTheta = Math.atan2(txtStartY, txtStartX);
-                let targetRho = Math.sqrt((txtStartX * txtStartX) + (txtStartY * txtStartY));
-
-                this.finalPolarPath.push([targetTheta, targetRho]);
+                let targetRho = Math.hypot(txtStartX, txtStartY);
+                rawPolarPath.push([targetTheta, targetRho]);
                 lastTheta = targetTheta;
 
                 let denseCartesian = [];
                 for (let i = 0; i < this.cartesianPath.length - 1; i++) {
                     let p1 = this.cartesianPath[i], p2 = this.cartesianPath[i+1];
-                    let dist = Math.sqrt(((p2[0]-p1[0]) * (p2[0]-p1[0])) + ((p2[1]-p1[1]) * (p2[1]-p1[1])));
-                    let steps = Math.max(2, Math.floor(dist * 350));
-                    for (let s = 0; s < steps; s++) {
-                        denseCartesian.push([p1[0] + (s/steps)*(p2[0]-p1[0]), p1[1] + (s/steps)*(p2[1]-p1[1])]);
-                    }
+                    let dist = Math.hypot(p2[0]-p1[0], p2[1]-p1[1]);
+                    let steps = Math.max(1, Math.floor(dist * 350));
+                    for (let s = 0; s < steps; s++) denseCartesian.push([p1[0] + (s/steps)*(p2[0]-p1[0]), p1[1] + (s/steps)*(p2[1]-p1[1])]);
                 }
                 if (this.cartesianPath.length) denseCartesian.push(this.cartesianPath[this.cartesianPath.length - 1]);
 
                 for (let pt of denseCartesian) {
-                    let rho = Math.sqrt((pt[0] * pt[0]) + (pt[1] * pt[1]));
-                    let theta = Math.atan2(pt[1], pt[0]);
+                    let rho = Math.hypot(pt[0], pt[1]);
+                    if (rho < 0.005) rho = 0.005;
 
+                    let theta = Math.atan2(pt[1], pt[0]);
+                    
                     while (theta - lastTheta > Math.PI) theta -= 2 * Math.PI;
                     while (theta - lastTheta < -Math.PI) theta += 2 * Math.PI;
-
                     let dTheta = theta - lastTheta;
+                    
                     if (rho < 0.15 && Math.abs(dTheta) > 0.08) {
                         let subSteps = Math.max(2, Math.floor(Math.abs(dTheta) / 0.05));
+                        let startR = rawPolarPath[rawPolarPath.length - 1][1];
                         for (let s = 1; s < subSteps; s++) {
-                            let lastR = this.finalPolarPath[this.finalPolarPath.length - 1][1];
-                            this.finalPolarPath.push([lastTheta + dTheta * (s/subSteps), lastR + (rho - lastR) * (s/subSteps)]);
+                            rawPolarPath.push([ lastTheta + dTheta * (s/subSteps), startR + (rho - startR) * (s/subSteps) ]);
                         }
                     }
-                    this.finalPolarPath.push([theta, rho > 1.0 ? 1.0 : rho]);
+                    rawPolarPath.push([theta, rho > 1.0 ? 1.0 : rho]);
                     lastTheta = theta;
+                }
+
+                this.finalPolarPath = [rawPolarPath[0]];
+                const minThetaRes = 0.0001; 
+                const minRhoRes = 0.0001;     
+
+                for(let i=1; i<rawPolarPath.length; i++) {
+                    let prev = this.finalPolarPath[this.finalPolarPath.length-1];
+                    let curr = rawPolarPath[i];
+                    if (Math.abs(curr[0] - prev[0]) < minThetaRes && Math.abs(curr[1] - prev[1]) < minRhoRes) continue;
+                    this.finalPolarPath.push(curr);
                 }
             }
         }
-
-        let pipelineInstance = new DuneWeaverPipeline();
-        let streamingTimer = null; 
-        let streamIndex = 0;
 
         const STORAGE_KEY_STATE = 'text_state';
         const STORAGE_KEY_SAVED = 'text_saved';
         
-        let pendingRenderFrame = null;
+        let pendingRenderFrame = null; let isSimulating = false; let simIndex = 0; let simAnimFrame = null; let collisionWarningActive = false;
+        let mediaRecorder = null; let recordedChunks = []; let isRecording = false;
 
-        // Suggestion 2 & 5: High-DPI scaling with requestAnimationFrame
+        const canvas = document.getElementById('sandCanvas');
+        canvas.addEventListener('wheel', (e) => { e.preventDefault(); canvasScale *= e.deltaY < 0 ? 1.1 : 0.9; renderSandVirtualTwin(lastGeneratedPolarPath); });
+        canvas.addEventListener('mousedown', (e) => { isDragging = true; lastMouseX = e.clientX; lastMouseY = e.clientY; });
+        canvas.addEventListener('mousemove', (e) => {
+            let rect = canvas.getBoundingClientRect(); mouseCanvasX = e.clientX - rect.left; mouseCanvasY = e.clientY - rect.top;
+            if(isDragging) { canvasPanX += (e.clientX - lastMouseX); canvasPanY += (e.clientY - lastMouseY); lastMouseX = e.clientX; lastMouseY = e.clientY; }
+            if (isDragging || isMagnifierActive) renderSandVirtualTwin(lastGeneratedPolarPath);
+        });
+        canvas.addEventListener('mouseup', () => isDragging = false);
+        canvas.addEventListener('mouseleave', () => isDragging = false);
+        canvas.addEventListener('dblclick', () => { canvasScale = 1; canvasPanX = 0; canvasPanY = 0; renderSandVirtualTwin(lastGeneratedPolarPath); });
+
+        function toggleRecording() {
+            let btn = document.getElementById('record-btn');
+            if (!isRecording) {
+                let stream = canvas.captureStream(30); mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+                mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+                mediaRecorder.onstop = () => {
+                    let blob = new Blob(recordedChunks, { type: 'video/webm' }); let url = URL.createObjectURL(blob);
+                    let a = document.createElement('a'); a.href = url; a.download = 'dune_weaver_export.webm'; a.click(); recordedChunks = [];
+                };
+                mediaRecorder.start(); isRecording = true;
+                btn.innerHTML = "⏹ STOP"; btn.style.background = "#ff4040"; btn.style.color = "#fff";
+                if(!isSimulating) toggleSimulation();
+            } else {
+                mediaRecorder.stop(); isRecording = false;
+                btn.innerHTML = "📼 REC"; btn.style.background = "#2a1c1c"; btn.style.color = "#ff6b6b";
+            }
+        }
+
         function renderSandVirtualTwin(polarPath) {
             if (pendingRenderFrame) cancelAnimationFrame(pendingRenderFrame);
-
             pendingRenderFrame = requestAnimationFrame(() => {
-                const canvas = document.getElementById('sandCanvas');
-                const ctx = canvas.getContext('2d');
+                const ctx = canvas.getContext('2d'); const dpr = window.devicePixelRatio || 1;
+                const rect = canvas.parentElement.getBoundingClientRect(); const size = rect.width; 
+                canvas.width = size * dpr; canvas.height = size * dpr;
+                ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.scale(dpr, dpr);
                 
-                // High-DPI Scaling Setup
-                const dpr = window.devicePixelRatio || 1;
-                // Since css is width: 100% and max-width 560px, grab current rect
-                const rect = canvas.parentElement.getBoundingClientRect();
-                const size = rect.width; 
+                ctx.fillStyle = themeColors.bgDark; ctx.fillRect(0, 0, size, size);
+                const center = size / 2; const scale = center * 0.96; 
+                const cx = center + canvasPanX; const cy = center + canvasPanY; const activeScale = scale * canvasScale;
 
-                canvas.width = size * dpr;
-                canvas.height = size * dpr;
-                
-                // Reset transform & clear
-                ctx.setTransform(1, 0, 0, 1, 0, 0);
-                ctx.scale(dpr, dpr);
-                ctx.fillStyle = "#d9b48f"; 
-                ctx.fillRect(0, 0, size, size);
-                
+                ctx.beginPath(); ctx.arc(cx, cy, activeScale, 0, Math.PI * 2); ctx.fillStyle = themeColors.sandBase; ctx.fill();
+                ctx.strokeStyle = themeColors.borderColor; ctx.lineWidth = 6 * canvasScale; ctx.stroke();
+                ctx.clip(); 
+
+                if (!activeFontData) {
+                    ctx.fillStyle = "rgba(102, 77, 49, 0.6)"; ctx.font = "bold " + (size * 0.04) + "px monospace";
+                    ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("[ FONT ENGINE MISSING ]", cx, cy - (size*0.03)); return;
+                }
                 if (!polarPath || !polarPath.length) return;
                 
-                const center = size / 2;
-                const scale = center * 0.94;
+                let pts = polarPath.map(pt => [ cx + (pt[1] * Math.cos(pt[0]) * activeScale), cy - (pt[1] * Math.sin(pt[0]) * activeScale) ]);
+                ctx.lineCap = "round"; ctx.lineJoin = "round";
                 
-                let pts = polarPath.map(pt => [
-                    center + pt[1] * Math.cos(pt[0]) * scale, 
-                    center - pt[1] * Math.sin(pt[0]) * scale
-                ]);
+                let tableDiam = parseFloat(document.getElementById('table-diam').value) || 500;
+                let ballDiam = parseFloat(document.getElementById('ball-diam').value) || 10;
+                const simulatedBallPx = (size * canvasScale) * (ballDiam / tableDiam);
                 
-                ctx.lineCap = "round"; 
-                ctx.lineJoin = "round";
+                let isDebugMode = document.getElementById('debug-toggle') && document.getElementById('debug-toggle').checked;
 
-                ctx.strokeStyle = "rgba(255, 226, 196, 0.12)"; ctx.lineWidth = 12 * (size/560); ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
-                for(let i=1; i<pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]); ctx.stroke();
-                
-                ctx.strokeStyle = "rgba(140, 107, 73, 0.25)"; ctx.lineWidth = 8 * (size/560); ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
-                for(let i=1; i<pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]); ctx.stroke();
-                
-                ctx.strokeStyle = "rgba(102, 77, 49, 0.45)"; ctx.lineWidth = 3.5 * (size/560); ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
-                for(let i=1; i<pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]); ctx.stroke();
-                
-                ctx.strokeStyle = "rgba(74, 51, 25, 0.85)"; ctx.lineWidth = 1.0 * (size/560); ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
-                for(let i=1; i<pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]); ctx.stroke();
+                // Moved outside of the debug block to fix the ReferenceError scoping bug
+                let drawColorLight = collisionWarningActive ? "rgba(255, 100, 100, 0.15)" : "rgba(255, 226, 196, 0.12)";
+                let drawColorMid = collisionWarningActive ? "rgba(255, 50, 50, 0.3)" : "rgba(140, 107, 73, 0.25)";
+                let drawColorDark = collisionWarningActive ? "rgba(200, 0, 0, 0.6)" : "rgba(102, 77, 49, 0.45)";
+                let drawColorDeep = collisionWarningActive ? "rgba(100, 0, 0, 0.9)" : "rgba(74, 51, 25, 0.85)";
+
+                const drawPath = (strokeStyle, lineWidthPx, scaleFactor = 1, applyShadow = false) => {
+                    ctx.strokeStyle = strokeStyle; ctx.lineWidth = lineWidthPx / scaleFactor; 
+                    if (applyShadow && !collisionWarningActive) { ctx.shadowOffsetX = 3 / scaleFactor; ctx.shadowOffsetY = 4 / scaleFactor; ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 4 / scaleFactor; } 
+                    else { ctx.shadowColor = 'transparent'; }
+                    ctx.beginPath(); let prevPt = null; const travelThreshold = size * 0.15 * canvasScale; 
+                    for (let i = 0; i < pts.length; i++) {
+                        let pt = pts[i];
+                        if (i > 0 && prevPt && Math.hypot(pt[0]-prevPt[0], pt[1]-prevPt[1]) > travelThreshold) { ctx.moveTo(pt[0], pt[1]); } 
+                        else { if(i===0) ctx.moveTo(pt[0], pt[1]); else ctx.lineTo(pt[0], pt[1]); }
+                        prevPt = pt;
+                    }
+                    ctx.stroke();
+                };
+
+                if (isDebugMode) {
+                    ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    for(let i=0; i<pts.length; i++) {
+                        if(i===0) ctx.moveTo(pts[i][0], pts[i][1]);
+                        else ctx.lineTo(pts[i][0], pts[i][1]);
+                    }
+                    ctx.stroke();
+
+                    ctx.fillStyle = "var(--accent-gold)";
+                    for(let i=0; i<pts.length; i++) {
+                        ctx.fillRect(pts[i][0]-1, pts[i][1]-1, 2, 2);
+                    }
+
+                    if(pts.length > 0) {
+                        ctx.fillStyle = "#4ca851"; 
+                        ctx.beginPath(); ctx.arc(pts[0][0], pts[0][1], 4, 0, Math.PI*2); ctx.fill();
+                        
+                        ctx.fillStyle = "#ff6b6b";
+                        ctx.beginPath(); ctx.arc(pts[pts.length-1][0], pts[pts.length-1][1], 4, 0, Math.PI*2); ctx.fill();
+                    }
+                } else {
+                    drawPath(drawColorLight, simulatedBallPx * 1.5); drawPath(drawColorMid, simulatedBallPx);
+                    drawPath(drawColorDark, simulatedBallPx * 0.5, 1, true); drawPath(drawColorDeep, Math.max(1, simulatedBallPx * 0.15));
+
+                    if (pts.length > 0) {
+                        let lastPt = pts[pts.length - 1]; let ballRadius = simulatedBallPx / 2; 
+                        ctx.shadowColor = 'rgba(0,0,0,0.7)'; ctx.shadowBlur = 8; ctx.shadowOffsetX = 3; ctx.shadowOffsetY = 5;
+                        let grad = ctx.createRadialGradient(lastPt[0] - ballRadius*0.3, lastPt[1] - ballRadius*0.3, ballRadius*0.1, lastPt[0], lastPt[1], ballRadius);
+                        grad.addColorStop(0, "#ffffff"); grad.addColorStop(0.4, "#a0a5b0"); grad.addColorStop(1, "#303540"); 
+                        ctx.beginPath(); ctx.arc(lastPt[0], lastPt[1], ballRadius, 0, Math.PI * 2); ctx.fillStyle = grad; ctx.fill();
+                        ctx.shadowColor = 'transparent';
+                    }
+                }
+
+                if (isMagnifierActive) {
+                    ctx.save(); let loupeRadius = size * 0.15; ctx.beginPath(); ctx.arc(mouseCanvasX, mouseCanvasY, loupeRadius, 0, Math.PI * 2);
+                    ctx.strokeStyle = themeColors.borderColor; ctx.lineWidth = 4; ctx.stroke(); ctx.clip();
+                    ctx.translate(mouseCanvasX, mouseCanvasY); ctx.scale(2.5, 2.5); ctx.translate(-mouseCanvasX, -mouseCanvasY);
+                    
+                    // Re-draw the table base so it accurately shows the border while magnified
+                    ctx.fillStyle = themeColors.bgDark; ctx.fillRect(0,0,size,size);
+                    ctx.beginPath(); ctx.arc(cx, cy, activeScale, 0, Math.PI * 2); ctx.fillStyle = themeColors.sandBase; ctx.fill();
+                    ctx.strokeStyle = themeColors.borderColor; ctx.lineWidth = 6 * canvasScale; ctx.stroke();
+                    ctx.clip(); // Restrict paths to not bleed over the table edge inside the loupe
+                    
+                    if (isDebugMode) {
+                        ctx.strokeStyle = "rgba(255, 255, 255, 0.4)"; ctx.lineWidth = 1/2.5;
+                        ctx.beginPath();
+                        for(let i=0; i<pts.length; i++) {
+                            if(i===0) ctx.moveTo(pts[i][0], pts[i][1]);
+                            else ctx.lineTo(pts[i][0], pts[i][1]);
+                        }
+                        ctx.stroke();
+
+                        ctx.fillStyle = "var(--accent-gold)";
+                        for(let i=0; i<pts.length; i++) {
+                            ctx.fillRect(pts[i][0]-(1/2.5), pts[i][1]-(1/2.5), 2/2.5, 2/2.5);
+                        }
+                    } else {
+                        drawPath(drawColorLight, simulatedBallPx * 1.5, 2.5); drawPath(drawColorMid, simulatedBallPx, 2.5);
+                        drawPath(drawColorDark, simulatedBallPx * 0.5, 2.5, true); drawPath(drawColorDeep, Math.max(1, simulatedBallPx * 0.15), 2.5);
+                        
+                        // Re-draw the ball inside the magnifier
+                        if (pts.length > 0) {
+                            let lastPt = pts[pts.length - 1]; let ballRadius = simulatedBallPx / 2; 
+                            ctx.shadowColor = 'rgba(0,0,0,0.7)'; ctx.shadowBlur = 8 / 2.5; ctx.shadowOffsetX = 3 / 2.5; ctx.shadowOffsetY = 5 / 2.5;
+                            let grad = ctx.createRadialGradient(lastPt[0] - ballRadius*0.3, lastPt[1] - ballRadius*0.3, ballRadius*0.1, lastPt[0], lastPt[1], ballRadius);
+                            grad.addColorStop(0, "#ffffff"); grad.addColorStop(0.4, "#a0a5b0"); grad.addColorStop(1, "#303540"); 
+                            ctx.beginPath(); ctx.arc(lastPt[0], lastPt[1], ballRadius, 0, Math.PI * 2); ctx.fillStyle = grad; ctx.fill();
+                            ctx.shadowColor = 'transparent';
+                        }
+                    }
+                    ctx.restore();
+                }
             });
         }
 
-        function updateCompilation(saveState = true) {
-            let inputEl = document.getElementById('text-input');
-            let mode = document.getElementById('mode-select').value;
-            let filename = document.getElementById('filename-input').value || "text_layout";
-
-            let rawText = inputEl.value;
-            if (["circle", "spiral", "sinewave", "ellipse", "petal", "peanut", "squircle"].includes(mode)) {
-                rawText = rawText.replace(/[\r\n]+/g, " ");
-            } else {
-                rawText = rawText.replace(/\r\n/g, "\n");
-            }
+        function updateCompilation(saveState = true, nonce = null) {
+            stopSimulation(); 
+            if (nonce === null) { activeCompileNonce++; nonce = activeCompileNonce; }
+            const banner = document.getElementById('status-banner');
+            banner.innerText = "Generating Coordinate Path..."; banner.style.color = "var(--accent-gold)";
             
-            rawText = rawText.replace(/[^a-zA-Z0-9\s\n!@#$%^&*().,?'"+\-]/g, "");
-            if (!rawText.trim()) rawText = "testing";
+            setTimeout(() => {
+                if (activeCompileNonce !== nonce) return;
+                try {
+                    let inputEl = document.getElementById('text-input'); let mode = document.getElementById('mode-select').value;
+                    let rawName = document.getElementById('filename-input').value || "text_layout"; let filename = rawName.replace(/[^a-zA-Z0-9_\-]/g, '') || "dune_weaver";
+                    let apiUrl = document.getElementById('api-url').value; let rawText = inputEl.value;
+                    
+                    document.getElementById('mode-desc-text').innerText = modeDescriptions[mode];
 
-            pipelineInstance.buildGeometry(rawText, mode);
-            pipelineInstance.processPipeline();
+                    let tableDiam = parseFloat(document.getElementById('table-diam').value) || 500;
+                    let ballDiam = parseFloat(document.getElementById('ball-diam').value) || 10;
+                    let kernMult = parseFloat(document.getElementById('kerning-slider').value) / 100.0;
+                    let leadMult = parseFloat(document.getElementById('leading-slider').value) / 100.0;
+                    let droopVal = parseFloat(document.getElementById('droop-slider').value) / 100.0;
+                    let margin = parseFloat(document.getElementById('margin-slider').value) || 0;
+                    let wipeQuality = parseFloat(document.getElementById('wipe-quality-slider').value) || 50;
+                    let just = document.getElementById('justification-select').value;
+                    let wipe = document.getElementById('wipe-toggle').checked; let reverse = document.getElementById('reverse-toggle').checked;
+                    let smoothCorners = document.getElementById('smooth-toggle').checked; let useLigatures = document.getElementById('ligature-toggle').checked;
+                    let feedrateMs = parseFloat(document.getElementById('feedrate-input').value) || 45;
 
-            let nodesCount = pipelineInstance.finalPolarPath.length;
-            let initialTh = pipelineInstance.finalPolarPath[0] ? pipelineInstance.finalPolarPath[0][0] : 0;
-            let finalTh = pipelineInstance.finalPolarPath[pipelineInstance.finalPolarPath.length - 1] ? pipelineInstance.finalPolarPath[pipelineInstance.finalPolarPath.length - 1][0] : 0;
-            let totalRevs = Math.abs(finalTh - initialTh) / (2 * Math.PI);
+                    let pipeline = new DuneWeaverPipeline();
+                    pipeline.buildGeometry(rawText, { mode, just, kernMult, leadMult, droopVal, wipe, reverse, ballDiam, tableDiam, wipeQuality, margin, smoothCorners, useLigatures });
+                    
+                    banner.innerText = "Processing Kinematics...";
+                    
+                    setTimeout(() => {
+                        if (activeCompileNonce !== nonce) return;
+                        pipeline.processPipeline();
+                        
+                        let nodesCount = pipeline.finalPolarPath.length;
+                        let initialTh = pipeline.finalPolarPath[0] ? pipeline.finalPolarPath[0][0] : 0;
+                        let finalTh = pipeline.finalPolarPath[nodesCount - 1] ? pipeline.finalPolarPath[nodesCount - 1][0] : 0;
+                        let totalRevs = Math.abs(finalTh - initialTh) / (2 * Math.PI);
+                        
+                        let alertHTML = totalRevs > 1000 ? " <span style='color:#ff6b6b; font-size:0.7rem;'>⚠️ INT32 ROLLOVER</span>" : "";
+                        document.getElementById('tel-nodes').innerHTML = `${nodesCount} nodes`; document.getElementById('tel-revs').innerHTML = `${totalRevs.toFixed(1)} turns${alertHTML}`;
+                        
+                        let rdpEl = document.getElementById('tel-rdp');
+                        if (pipeline.rdpReduced) { rdpEl.innerHTML = `<span style="color:var(--accent-gold);">Active (Simplified)</span>`; } 
+                        else { rdpEl.innerHTML = `<span style="color:var(--text-muted)">Inactive</span>`; }
+                        
+                        let scalePercent = Math.floor(pipeline.appliedScaleFactor * 100);
+                        document.getElementById('tel-scale').innerHTML = `<span style="color:var(--accent-gold);">${scalePercent}%</span>`;
 
-            document.getElementById('tel-nodes').innerText = `${nodesCount} nodes`;
-            document.getElementById('tel-revs').innerText = `${totalRevs.toFixed(1)} turns`;
-            
-            let scaleValEl = document.getElementById('tel-scale');
-            if (pipelineInstance.appliedScaleFactor < 1.0) {
-                scaleValEl.innerHTML = `<span style="color:#ffbc6b;">Auto-Fit (${Math.floor(pipelineInstance.appliedScaleFactor * 100)}%)</span>`;
-            } else {
-                scaleValEl.innerHTML = `<span style="color:#7cd97c;">Optimum (100%)</span>`;
-            }
+                        let estTimeMins = (nodesCount * feedrateMs) / 60000;
+                        document.getElementById('tel-time').innerText = estTimeMins > 60 ? `~${(estTimeMins/60).toFixed(1)} hrs` : `~${estTimeMins.toFixed(1)} mins`;
 
-            renderSandVirtualTwin(pipelineInstance.finalPolarPath);
-            if (saveState) localStorage.setItem(STORAGE_KEY_STATE, JSON.stringify({ rawText: inputEl.value, mode, filename }));
+                        let tightestLoopFraction = pipeline.finalCharHeight * 0.20; let ballFraction = ballDiam / (tableDiam / 2.0); 
+
+                        let legibilityEl = document.getElementById('tel-legibility'); 
+                        if (tightestLoopFraction >= ballFraction) {
+                            collisionWarningActive = false; legibilityEl.innerHTML = `<span style="color:#4ca851;">OK (Loops Open)</span>`;
+                            banner.innerText = "System Ready"; banner.style.color = "var(--text-main)";
+                        } else {
+                            collisionWarningActive = true; legibilityEl.innerHTML = `<span style="color:#ff6b6b;">POOR (Loops Erased)</span>`;
+                            banner.innerText = "WARNING: Text too dense. Physical ball will erase cursive loops."; banner.style.color = "#ff6b6b";
+                        }
+
+                        lastGeneratedPolarPath = pipeline.finalPolarPath;
+                        document.getElementById('sim-scrubber').max = Math.max(0, lastGeneratedPolarPath.length - 1);
+                        document.getElementById('sim-scrubber').value = lastGeneratedPolarPath.length - 1;
+                        
+                        if (lastGeneratedPolarPath && lastGeneratedPolarPath.length > 0) {
+                            let endPt = lastGeneratedPolarPath[lastGeneratedPolarPath.length - 1];
+                            document.getElementById('live-coord-readout').innerText = `Th: ${endPt[0].toFixed(4)} | R: ${endPt[1].toFixed(4)}`;
+                        }
+
+                        renderSandVirtualTwin(lastGeneratedPolarPath);
+                        
+                        if (saveState) {
+                            try {
+                                localStorage.setItem(STORAGE_KEY_STATE, JSON.stringify({ 
+                                    rawText: inputEl.value, mode, filename, apiUrl, tableDiam, ballDiam, just, wipe, reverse, smoothCorners, margin, wipeQuality, scaleStrategy: currentScaleStrategy, useLigatures,
+                                    kern: document.getElementById('kerning-slider').value, lead: document.getElementById('leading-slider').value, droop: document.getElementById('droop-slider').value, feedrate: feedrateMs,
+                                    debug: document.getElementById('debug-toggle') ? document.getElementById('debug-toggle').checked : false
+                                }));
+                            } catch (e) { console.warn("Storage quota exceeded. State not cached."); }
+                        }
+                    }, 10);
+                } catch(err) {
+                    banner.innerText = "ERROR: " + err.message; banner.style.color = "#ff6b6b"; console.error(err);
+                }
+            }, 10);
         }
 
-        // Suggestion 1: Debounce function to prevent UI lockup on rapid typing
-        function debounce(func, wait) {
-            let timeout;
-            return function(...args) {
-                clearTimeout(timeout);
-                timeout = setTimeout(() => func.apply(this, args), wait);
-            };
+        function toggleSimulation() {
+            const btn = document.getElementById('sim-btn');
+            if (isSimulating) { stopSimulation(); } 
+            else {
+                if (!lastGeneratedPolarPath || lastGeneratedPolarPath.length === 0) return;
+                isSimulating = true; simIndex = parseInt(document.getElementById('sim-scrubber').value, 10);
+                if (simIndex >= lastGeneratedPolarPath.length - 1) simIndex = 0; 
+                btn.innerHTML = "⏹ STOP"; btn.style.background = "#ff6b6b"; btn.style.borderColor = "#ff6b6b"; btn.style.color = "#fff"; animateSimulation();
+            }
         }
 
+        function stopSimulation() {
+            isSimulating = false; if (simAnimFrame) cancelAnimationFrame(simAnimFrame);
+            const btn = document.getElementById('sim-btn'); btn.innerHTML = "▶ Play"; btn.style.background = "#2a261c"; btn.style.borderColor = "var(--accent-gold-dim)"; btn.style.color = "var(--accent-gold)";
+            if (isRecording) toggleRecording(); 
+        }
+
+        function animateSimulation() {
+            if (!isSimulating) return;
+            let path = lastGeneratedPolarPath; let speedMult = parseInt(document.getElementById('sim-speed-slider').value, 10);
+            let step = (path.length / 10000) * speedMult; 
+            simIndex += step;
+            
+            let drawIndex = Math.floor(simIndex);
+
+            if (drawIndex >= path.length) { 
+                simIndex = path.length - 1; 
+                drawIndex = path.length - 1;
+                document.getElementById('sim-scrubber').value = drawIndex;
+                
+                if (path[drawIndex]) {
+                    document.getElementById('live-coord-readout').innerText = `Th: ${path[drawIndex][0].toFixed(4)} | R: ${path[drawIndex][1].toFixed(4)}`;
+                }
+
+                renderSandVirtualTwin(path.slice(0, drawIndex + 1)); 
+                stopSimulation(); 
+                return; 
+            }
+            
+            document.getElementById('sim-scrubber').value = drawIndex; 
+            if (path[drawIndex]) {
+                document.getElementById('live-coord-readout').innerText = `Th: ${path[drawIndex][0].toFixed(4)} | R: ${path[drawIndex][1].toFixed(4)}`;
+            }
+
+            renderSandVirtualTwin(path.slice(0, drawIndex + 1)); simAnimFrame = requestAnimationFrame(animateSimulation);
+        }
+
+        document.getElementById('sim-scrubber').addEventListener('input', (e) => {
+            if (isSimulating) stopSimulation();
+            simIndex = parseInt(e.target.value, 10); 
+            
+            if (lastGeneratedPolarPath && lastGeneratedPolarPath[simIndex]) {
+                let pt = lastGeneratedPolarPath[simIndex];
+                document.getElementById('live-coord-readout').innerText = `Th: ${pt[0].toFixed(4)} | R: ${pt[1].toFixed(4)}`;
+            }
+            
+            renderSandVirtualTwin(lastGeneratedPolarPath.slice(0, simIndex));
+        });
+
+        function debounce(func, wait) { let timeout; return function(...args) { clearTimeout(timeout); timeout = setTimeout(() => func.apply(this, args), wait); }; }
         const debouncedUpdate = debounce(() => updateCompilation(true), 250);
-
-        function getThrString() {
-            return pipelineInstance.finalPolarPath.map(pt => `${pt[0].toFixed(5)} ${pt[1].toFixed(5)}`).join('\n') + '\n';
-        }
+        function getThrString() { return lastGeneratedPolarPath.map(pt => `${pt[0].toFixed(5)} ${pt[1].toFixed(5)}`).join('\n') + '\n'; }
+        function getBaseApiUrl() { let userUrl = document.getElementById('api-url').value.trim(); if (!userUrl) return ""; if (!/^https?:\/\//i.test(userUrl)) userUrl = "http://" + userUrl; return userUrl.replace(/\/+$/, ""); }
 
         function triggerFileDownload() {
-            let n = (document.getElementById('filename-input').value || 'text_layout').replace(/[^a-zA-Z0-9_\-]/g, '');
+            if (!lastGeneratedPolarPath || !lastGeneratedPolarPath.length) return;
+            let n = (document.getElementById('filename-input').value || 'text_layout').replace(/[^a-zA-Z0-9_\-]/g, '') || 'dune_weaver';
             let blob = new Blob([getThrString()], { type: "text/plain;charset=utf-8" });
-            let a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `${n}.thr`;
-            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            let a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `${n}.thr`; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        }
+
+        async function copyRawPath() {
+            if (!lastGeneratedPolarPath || !lastGeneratedPolarPath.length) return;
+            const thrString = getThrString();
+            try {
+                if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(thrString); } 
+                else {
+                    let textArea = document.createElement("textarea"); textArea.value = thrString; textArea.style.position = "fixed";
+                    document.body.appendChild(textArea); textArea.focus(); textArea.select(); document.execCommand('copy'); document.body.removeChild(textArea);
+                }
+                let btn = document.getElementById('copy-btn'); let oldText = btn.innerText; btn.innerText = "✅ COPIED!"; btn.style.color = "#4ca851"; btn.style.borderColor = "#4ca851";
+                setTimeout(() => { btn.innerText = oldText; btn.style.color = "var(--text-muted)"; btn.style.borderColor = "var(--border-color)"; }, 2000);
+            } catch (err) { console.error('Failed to copy', err); }
         }
 
         async function uploadToController() {
             const statusBanner = document.getElementById('status-banner');
+            if (!lastGeneratedPolarPath || !lastGeneratedPolarPath.length) { statusBanner.style.color = "#ff6b6b"; statusBanner.innerText = "ERROR: No path generated."; return; }
             let rawName = document.getElementById('filename-input').value || 'text_layout';
-            let filename = `${rawName.replace(/[^a-zA-Z0-9_\-]/g, '')}.thr`;
-            statusBanner.style.color = "var(--accent-gold-light)"; statusBanner.innerText = "📤 Saving track layout directly to table storage...";
+            let filename = `${rawName.replace(/[^a-zA-Z0-9_\-]/g, '') || 'dune_weaver'}.thr`; let endpointUrl = `${getBaseApiUrl()}/upload_theta_rho`;
+            statusBanner.style.color = "var(--accent-gold-light)"; statusBanner.innerText = `Uploading to ${endpointUrl}...`;
 
+            const controller = new AbortController(); const timeoutId = setTimeout(() => controller.abort(), 8000); 
             try {
-                let formData = new FormData();
-                formData.append('file', new Blob([getThrString()], { type: 'text/plain' }), filename);
-                
-                let response = await fetch('/api/upload_theta_rho', { method: 'POST', body: formData });
+                let formData = new FormData(); formData.append('file', new Blob([getThrString()], { type: 'text/plain' }), filename);
+                let response = await fetch(endpointUrl, { method: 'POST', body: formData, mode: 'cors', signal: controller.signal });
+                clearTimeout(timeoutId);
                 if (response.ok) {
-                    statusBanner.style.color = "#7cd97c"; statusBanner.innerText = `✅ Pattern saved directly as '${filename}'!`;
+                    statusBanner.style.color = "#4ca851"; statusBanner.innerText = `SUCCESS: Saved as '${filename}'`;
                     saveToHistory(rawName, document.getElementById('text-input').value, document.getElementById('mode-select').value);
-                    setTimeout(() => { statusBanner.innerText = ""; }, 4000);
-                } else { throw new Error(); }
-            } catch (e) {
-                statusBanner.style.color = "#ff6b6b"; statusBanner.innerText = "❌ Path error. Running standalone off-network? Use 'Download THR'.";
+                    setTimeout(() => { statusBanner.style.color = "var(--text-main)"; statusBanner.innerText = "System Ready"; }, 4000);
+                } else throw new Error(`HTTP ${response.status}`);
+            } catch (e) { 
+                statusBanner.style.color = "#ff6b6b";
+                if (e.name === 'AbortError') statusBanner.innerText = "ERROR: Timeout. Controller offline?";
+                else if (e.message === "Failed to fetch") statusBanner.innerText = "ERROR: Network/CORS block. Check URL.";
+                else statusBanner.innerText = `ERROR: ${e.message}`; 
             }
-        }
-
-        // Adapted for live variable feedrate (Suggestion 12)
-        function toggleLiveStreaming() {
-            const btn = document.getElementById('stream-btn'); 
-            const statusBanner = document.getElementById('status-banner');
-            
-            if (streamingTimer) {
-                clearTimeout(streamingTimer); 
-                streamingTimer = null;
-                btn.innerText = "🎮 Stream Live to Gantry"; 
-                btn.classList.remove('streaming');
-                statusBanner.innerText = "⏹️ Pi UART hardware stream interrupted."; 
-                return;
-            }
-            if (!pipelineInstance.finalPolarPath.length) return;
-            
-            streamIndex = 0; 
-            btn.innerText = "🛑 Abort Streaming"; 
-            btn.classList.add('streaming');
-            statusBanner.style.color = "var(--accent-gold-light)"; 
-            statusBanner.innerText = "⚡ Initializing Raspberry Pi UART pipeline transmission...";
-
-            const streamNextStep = async () => {
-                if (streamIndex >= pipelineInstance.finalPolarPath.length) {
-                    clearTimeout(streamingTimer); streamingTimer = null;
-                    btn.innerText = "🎮 Stream Live to Gantry"; btn.classList.remove('streaming');
-                    statusBanner.style.color = "#7cd97c"; statusBanner.innerText = "🏁 Completed! The Pi has finished streaming coordinates to the gantry."; 
-                    return;
-                }
-                
-                let [theta, rho] = pipelineInstance.finalPolarPath[streamIndex];
-                try {
-                    await fetch(`/api/stream_step?theta=${theta.toFixed(5)}&rho=${rho.toFixed(5)}`, { method: 'GET' });
-                    statusBanner.innerText = `⚡ Pi UART Stream: node index ${streamIndex} / ${pipelineInstance.finalPolarPath.length}`;
-                    streamIndex++;
-                    
-                    // Fetch dynamic speed from slider for next tick
-                    let msSpeed = parseInt(document.getElementById('speed-slider').value, 10);
-                    streamingTimer = setTimeout(streamNextStep, msSpeed);
-                    
-                } catch (err) {
-                    clearTimeout(streamingTimer); streamingTimer = null;
-                    btn.innerText = "🎮 Stream Live to Gantry"; btn.classList.remove('streaming');
-                    statusBanner.style.color = "#ff6b6b"; statusBanner.innerText = "❌ Pi serial stream dropped.";
-                }
-            };
-            
-            // Kick off stream
-            streamNextStep();
         }
 
         function saveToHistory(label, text, mode) {
             let saved = JSON.parse(localStorage.getItem(STORAGE_KEY_SAVED) || '[]');
             saved = saved.filter(item => item.label !== label); saved.unshift({ label, text, mode });
-            if (saved.length > 3) saved.pop();
-            localStorage.setItem(STORAGE_KEY_SAVED, JSON.stringify(saved)); renderHistoryList();
+            if (saved.length > 3) saved.pop(); localStorage.setItem(STORAGE_KEY_SAVED, JSON.stringify(saved)); renderHistoryList();
         }
 
         function renderHistoryList() {
-            let saved = JSON.parse(localStorage.getItem(STORAGE_KEY_SAVED) || '[]'); const listEl = document.getElementById('history-list'); listEl.innerHTML = '';
-            if (!saved.length) { listEl.innerHTML = '<li style="font-size:0.8rem; opacity:0.4; padding:4px 0;">No logs cached.</li>'; return; }
+            let historyList = document.getElementById('history-list'); if(!historyList) return;
+            let saved = JSON.parse(localStorage.getItem(STORAGE_KEY_SAVED) || '[]'); historyList.innerHTML = '';
+            if (!saved.length) { historyList.innerHTML = '<li style="font-size:0.8rem; opacity:0.4; padding:4px 0;">No logs cached.</li>'; return; }
             saved.forEach(item => {
-                let li = document.createElement('li'); li.className = 'history-item';
-                li.innerHTML = `<span>${item.label}</span><span class="item-mode">${item.mode}</span>`;
-                li.onclick = () => {
-                    document.getElementById('text-input').value = item.text; document.getElementById('mode-select').value = item.mode;
-                    document.getElementById('filename-input').value = item.label;
-                    updateCompilation(true);
-                };
-                listEl.appendChild(li);
+                let li = document.createElement('li'); li.className = 'history-item'; li.innerHTML = `<span>${item.label}</span><span style="opacity:0.5;">${item.mode}</span>`;
+                li.onclick = () => { document.getElementById('text-input').value = item.text; document.getElementById('mode-select').value = item.mode; document.getElementById('filename-input').value = item.label; updateCompilation(true); };
+                historyList.appendChild(li);
             });
         }
 
         function loadSavedState() {
-            let state = JSON.parse(localStorage.getItem(STORAGE_KEY_STATE));
-            if (state) {
-                document.getElementById('text-input').value = state.rawText || "testing";
-                document.getElementById('mode-select').value = state.mode || "centered";
-                document.getElementById('filename-input').value = state.filename || "testing";
-            }
+            let state = JSON.parse(localStorage.getItem(STORAGE_KEY_STATE)); if(!state) return;
+            if(state.rawText) document.getElementById('text-input').value = state.rawText;
+            if(state.mode) document.getElementById('mode-select').value = state.mode;
+            if(state.filename) document.getElementById('filename-input').value = state.filename;
+            if(state.apiUrl) document.getElementById('api-url').value = state.apiUrl;
+            if(state.tableDiam) document.getElementById('table-diam').value = state.tableDiam;
+            if(state.ballDiam) document.getElementById('ball-diam').value = state.ballDiam;
+            if(state.just) document.getElementById('justification-select').value = state.just;
+            if(state.wipe !== undefined) document.getElementById('wipe-toggle').checked = state.wipe;
+            if(state.reverse !== undefined) document.getElementById('reverse-toggle').checked = state.reverse;
+            if(state.smoothCorners !== undefined) document.getElementById('smooth-toggle').checked = state.smoothCorners;
+            if(state.useLigatures !== undefined) document.getElementById('ligature-toggle').checked = state.useLigatures;
+            if(state.scaleStrategy) { currentScaleStrategy = state.scaleStrategy; document.querySelectorAll('.scale-btn').forEach(btn => { btn.classList.remove('active'); if(btn.innerText.includes(state.scaleStrategy==='auto'?'Auto':state.scaleStrategy*100)) btn.classList.add('active'); }); }
+            if(state.margin) { document.getElementById('margin-slider').value = state.margin; document.getElementById('margin-val').innerText = `${state.margin}%`; }
+            if(state.wipeQuality) { document.getElementById('wipe-quality-slider').value = state.wipeQuality; document.getElementById('wipe-quality-val').innerText = `${state.wipeQuality}%`; }
+            if(state.kern) { document.getElementById('kerning-slider').value = state.kern; document.getElementById('kerning-val').innerText = `${state.kern}%`; }
+            if(state.lead) { document.getElementById('leading-slider').value = state.lead; document.getElementById('leading-val').innerText = `${state.lead}%`; }
+            if(state.droop) { document.getElementById('droop-slider').value = state.droop; document.getElementById('droop-val').innerText = `${state.droop}%`; }
+            if(state.feedrate) document.getElementById('feedrate-input').value = state.feedrate;
+            if(state.debug !== undefined && document.getElementById('debug-toggle')) document.getElementById('debug-toggle').checked = state.debug;
             renderHistoryList();
         }
 
-        document.getElementById('text-input').addEventListener('input', debouncedUpdate);
-        document.getElementById('filename-input').addEventListener('input', debouncedUpdate);
-        document.getElementById('mode-select').addEventListener('change', () => updateCompilation(true));
+        ['api-url', 'text-input', 'filename-input', 'table-diam', 'ball-diam', 'feedrate-input'].forEach(id => { document.getElementById(id).addEventListener('input', debouncedUpdate); });
+        ['mode-select', 'justification-select', 'wipe-toggle', 'reverse-toggle', 'smooth-toggle', 'ligature-toggle'].forEach(id => { document.getElementById(id).addEventListener('change', () => updateCompilation(true)); });
         
-        // Feedrate slider listener
-        document.getElementById('speed-slider').addEventListener('input', (e) => {
-            document.getElementById('speed-val').innerText = `${e.target.value}ms`;
+        ['kerning', 'leading', 'margin', 'wipe-quality', 'droop'].forEach(id => { 
+            let el = document.getElementById(`${id}-slider`);
+            if(el) {
+                el.addEventListener('input', (e) => { 
+                    let valEl = document.getElementById(`${id}-val`);
+                    if(valEl) valEl.innerText = `${e.target.value}%`; 
+                    debouncedUpdate(); 
+                }); 
+            }
         });
-
-        // Handle window resizes for the canvas
-        window.addEventListener('resize', debounce(() => renderSandVirtualTwin(pipelineInstance.finalPolarPath), 150));
-
-        document.getElementById('export-btn').addEventListener('click', triggerFileDownload);
-        document.getElementById('save-btn').addEventListener('click', uploadToController);
-        document.getElementById('stream-btn').addEventListener('click', toggleLiveStreaming);
-
-        window.onload = () => { loadSavedState(); updateCompilation(false); };
+        
+        document.getElementById('sim-speed-slider').addEventListener('input', (e) => { document.getElementById('sim-speed-val').innerText = `${e.target.value}x`; });
+        
+        window.addEventListener('resize', debounce(() => renderSandVirtualTwin(lastGeneratedPolarPath), 150));
+        window.onload = loadFont;
     </script>
 </body>
 </html>
-
