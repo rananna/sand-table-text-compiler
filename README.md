@@ -43,7 +43,7 @@ This method is the easiest way to get started and does not require modifying or 
 2. **Access the tool:** Open your web browser and navigate directly to the asset using your table's local IP address:
    `http://<YOUR_PI_IP>:8000/static/text.html`
 
-> **⚠️ Downsides of Option A:** > * **No UI Integration:** You must manually type or bookmark this long URL to access the tool.
+> **⚠️ Downsides of Option A:** > * **No UI Integration:** You must manually type or bookmark the long URL to access the tool.
 > * **Update Wipeout:** The `static` directory is completely erased and rebuilt during official Dune Weaver software updates. You will lose `text.html`. Always keep a safe backup copy in a separate folder like `~/my-custom-tools/`.
 
 ### Option B: Full UI Menu Integration (Advanced)
@@ -134,108 +134,50 @@ cd ..
 
 ---
 
-## 📝 Section 3: Reference Documentation for text.html (Dune Weaver Text Compiler)
+## 📝 Section 3: Reference Documentation for text.html
 
 A unified, browser-based serial interface and text-to-path compiler for kinetic sand tables. This tool translates standard alphanumeric text into continuous, machine-ready Theta-Rho (`.thr`) coordinate paths.
-
-It includes a custom single-stroke proportional font engine and a parametric math pipeline capable of wrapping text around complex geometric profiles like Archimedean spirals, concentric circles, and Cassini peanuts.
 
 ### Features
 * **Custom Pathing Engine:** Transforms strings into continuous vectors using a custom retraced proportional font, minimizing gantry travel time and eliminating sand drags between characters.
 * **Complex Geometric Projections:** Projects flat text along various parametric curves:
-	+ Centered Block Stack
-	+ Concentric Circular Ring Bend
-	+ Continuous Archimedean Spiral Wrap
-	+ Rolling Sine Wave Horizontal Ribbon
-	+ The Gentle Ellipse
-	+ The Soft Petal (5-Ripple)
-	+ The Cassini Peanut
-	+ The Perimeter Squircle
+	+ Centered Block Stack, Concentric Circular Ring Bend, Archimedean Spiral Wrap, Rolling Sine Wave, Ellipse, Soft Petal (5-Ripple), Cassini Peanut, and Perimeter Squircle.
 * **Live Virtual Twin:** Real-time, Retina-ready HTML5 Canvas rendering of the calculated sand path.
 * **Pi Telemetry Dashboard:** Tracks vector output nodes, calculated font scale, and rotational matrix loops.
-* **Direct Hardware Interfacing:** Streams coordinates directly to a Raspberry Pi serial interface (via UART endpoint) with adjustable millisecond feedrates, or saves the `.thr` file directly to the controller's storage.
+* **Direct Hardware Interfacing:** Streams coordinates directly to a Raspberry Pi serial interface (via UART endpoint).
 * **Standalone Export:** Works completely offline to generate and download `.thr` files for manual transfer.
 
-### Project Structure
-The entire application is currently contained within a single `text.html` file, which includes:
-1. **`ProportionalRetracedFont`:** A static dictionary containing the vector spline data for all supported alphanumeric characters and symbols.
-2. **`DuneWeaverPipeline`:** The core mathematical engine that handles word-wrapping, arc-length parameterization, curve projection, and cartesian-to-polar coordinate transformations.
-3. **UI Controller:** Handles local storage state caching, debounced user inputs, and network requests (`fetch`) to the local motor controller backend.
+### ⚠️ System Warnings & Error States (Red Text)
+Dune Weaver actively monitors your toolpath and hardware limits. If the system detects an issue that will physically fail on the table, the relevant UI element will turn **red**.
 
-### 🚀 Quick Start & Usage Modes
+* **Red Canvas Toolpaths:** If the drawn text in the Virtual Twin preview turns red instead of natural sand colors, it means the physical ball diameter is too wide for the current text scale. The ball will physically overlap its own path and erase the cursive loops. *Fix: Type fewer words to allow Auto-Fit to scale the text up, manually increase scale, or specify a smaller Ball Dia.*
+* **POOR (Loops Erased):** Located in the Telemetry Dashboard under *Physics Legibility*. This is the text-based UI warning corresponding to the red canvas toolpaths above.
+* **⚠️ INT32 ROLLOVER:** Located in the Telemetry Dashboard next to *Path Rotations*. If a single continuous toolpath exceeds 1,000 full rotations, it risks overflowing the 32-bit integer limit, causing the table to freeze or crash. *Fix: Break the text into smaller batches or reduce the total length.*
+* **Font Blocked / Compilation Error:** Appears in the main Status Banner if the local font fails to fetch, or if a manually uploaded SVG/JSON has broken syntax. 
+* **Upload Errors:** Appears in the main Status Banner if the controller is off or the API URL is incorrect.
 
-#### Standalone Mode (No Hardware)
-1. **Load a Font:** Drag and drop an `.svg` or `.json` font file directly onto the window, or click **📂 Load Font** in the top right.
-2. **Enter Text:** Type your desired message in the **Message Payload** text box.
+### Quick Start & Usage
+1. **Load a Font:** Drag and drop an `.svg` or `.json` font file directly onto the window.
+2. **Enter Text:** Type your message in the **Message Payload** text box.
 3. **Select a Projection:** Choose a mathematical shape from the **Geometric Projection** dropdown.
 4. **Preview:** The canvas on the right will automatically compile and display your toolpath. 
 5. **Export:** Click **💾 Download .THR** to save the file locally.
 
-#### Networked/Raspberry Pi Mode
-To use the **Save Direct to Table** button (or Stream Live to Gantry), the `text.html` file must be served from (or proxied to) a backend controller (like a Raspberry Pi running a Python/Node.js web server) that exposes the following endpoints:
-* `POST /api/upload_theta_rho`: Accepts a `.thr` file payload and saves it to the table's local directory.
-* `GET /api/stream_step?theta={val}&rho={val}`: Accepts discrete coordinates and relays them via UART/Serial to the motor drivers.
+### User Interface Overview
+* **Control Dashboard:** Houses all layout, hardware specifications, and toolpath optimization parameters.
+* **Advanced Tuning:** Adjust **Word Jump Droop** (for elegant cursive jumps), **Perimeter Margin**, and **Context Ligatures** for specialized character transitions.
+* **Telemetry Dashboard:** Monitor Vector Nodes, Path Rotations, and Physics Legibility.
+* **Virtual Twin:** A 1:1 simulation of the physical table. Pan, zoom, and scrub through simulation time.
+* **Loupe Tool:** Inspect vector intersections and ball-width overlap in high detail.
+* **Keyboard Shortcuts:** `Ctrl + Enter` (Upload), `Ctrl + S` (Download), `Spacebar` (Play/Pause Sim).
 
-### ⚠️ System Warnings & Error States (Red Text)
-Dune Weaver actively monitors your toolpath and hardware limits. If the system detects an issue that will physically fail on the table or block a network transfer, the relevant telemetry, status banner, or canvas will turn **red**.
-* **Red Canvas Toolpaths:** If the drawn text in the Virtual Twin preview turns red instead of natural sand colors, it means the physical ball diameter is too wide for the current text scale. The ball will physically overlap its own path and erase the cursive loops. *Fix: Type fewer words to allow Auto-Fit to scale the text up, manually increase scale, or specify a smaller Ball Dia.*
-* **POOR (Loops Erased):** Located in the Telemetry Dashboard under *Physics Legibility*. This is the text-based UI warning corresponding to the red canvas toolpaths above.
-* **⚠️ INT32 ROLLOVER:** Located in the Telemetry Dashboard next to *Path Rotations*. If a single continuous toolpath exceeds 1,000 full rotations, it risks overflowing the 32-bit integer limit on certain GRBL/MKS DLC32 firmware versions, causing the table to freeze or crash. *Fix: Break the text into smaller batches or reduce the total length.*
-* **Font Blocked / Compilation Error:** Appears in the main Status Banner. Occurs if the local font fails to fetch, or if a manually uploaded SVG/JSON has broken syntax that the kinematics engine cannot parse. 
-* **Upload Errors (Timeout / CORS / Offline):** Appears in the main Status Banner when attempting to push directly to the table. If the controller is turned off, the IP address in the **Controller API** field is incorrect, or your browser blocks the local network request, the banner will flash red with the specific HTTP or Network error.
-
-### 🎛️ User Interface Overview
-The interface is divided into two primary sections: the **Control Dashboard** (left) and the **Virtual Twin Preview** (right).
-
-#### The Control Dashboard
-This panel houses all variables related to layout, hardware specifications, and toolpath optimization.
-* **Pattern Name:** Sets the filename for your exported `.thr` file.
-* **Scaling Strategy:** Controls the overall size of the text. **Auto-Fit** dynamically scales the text to fill your table's maximum radius without clipping the edge.
-
-#### ⚙️ Advanced Tuning & Hardware
-Expand the Advanced Tuning section to match the software engine with your exact physical hardware.
-* **Table Model (mm):** Sets the absolute boundary radius. This acts as a mathematical wall to prevent the mechanism from crashing.
-* **Ball Dia. (mm):** The physical width of your steel ball. Used by the physics engine to calculate legibility and visually simulate sand displacement.
-* **Controller API:** The local IP endpoint of your table (e.g., `http://192.168.1.100:8000`) for direct network uploads.
-* **Word Jump Droop:** When the ball lifts to jump between individual words, this controls the downward gravity/sag of the connecting line. Keep it high for elegant cursive aesthetics.
-* **Perimeter Margin:** Keeps the text away from the absolute edge of the glass (padding).
-* **Character & Line Spacing:** Adjusts kerning (horizontal) and leading (vertical) space.
-* **Wipe Quality:** Controls the density of the center-out flattening spiral if **Prepend Spiral Wipe** is activated.
-* **Context Ligatures:** Automatically swaps specific letter pairings for pre-drawn continuous transitions to avoid awkward overlaps.
-* **Smooth Corners:** Applies Chaikin smoothing to sharp angles in the vector path, ensuring smoother motor velocity.
-
-### 📡 Telemetry Dashboard & Simulation
-Before executing a print, monitor the **Telemetry Dashboard** to ensure your mechanism can handle the toolpath.
-* **Vector Nodes:** The total number of coordinate pairs in the generated `.thr` file.
-* **Path Rotations:** The total number of physical rotations the theta motor must complete. 
-* **Estimated Time:** Calculated based on your specified **Est. Feedrate (ms/pt)**.
-* **Physics Legibility:** A check to ensure your steel ball isn't too large for the tightest details in the generated path.
-
-#### The Virtual Twin
-The canvas provides a 1:1 simulation of the physical table.
-* **Pan & Zoom:** Click and drag to pan around the table. Use your mouse wheel to zoom. Double-click to reset the view.
-* **Simulation Player:** Click **▶ Play** to animate the exact routing path the steel ball will take. You can scrub through time using the slider.
-* **Loupe Tool:** Click **🔎 Loupe** to toggle a magnifying glass over your cursor to inspect vector intersections and ball-width overlap in high detail.
-* **Record:** Click **📼 REC** to capture the simulation as a WebM video file.
-
-### 🛠️ Font Manager & Inspector
-Click **🛠️ Font Manager** in the top header to inspect the active font currently loaded in memory.
-* **Available Glyphs:** Displays every character successfully parsed from your SVG or JSON file.
-* **Kerning Pair Inspector:** Type any two characters (e.g., `o` and `r`) to visually test how the engine mathematically overlaps them.
-
-### ⌨️ Keyboard Shortcuts
-| Shortcut | Action |
-| :--- | :--- |
-| `Ctrl + Enter` | Upload directly to the Controller API. |
-| `Ctrl + S` | Download the `.thr` file locally. |
-| `Spacebar` | Play/Pause the canvas simulation (when not typing in a text field). |
-
-### 🛣️ Roadmap & Future Enhancements
-* Implementation of the native browser Web Serial
+### Project Structure & Roadmap
+* **Structure:** The tool is a single-file application containing the `ProportionalRetracedFont` data, the `DuneWeaverPipeline` math engine, and the UI Controller logic.
+* **Roadmap:** Future plans include the implementation of native browser Web Serial for direct controller communication.
 
 ---
 
-## 📄 Appendix: `Layout.tsx` Reference Backup
+## 📄 Appendix: Layout.tsx Reference Backup
 
 ```tsx
 import { useEffect, useMemo, useState } from 'react'
@@ -360,7 +302,7 @@ export function Layout() {
             <span className="material-symbols-outlined text-primary text-2xl">waves</span>
             <span className="font-bold text-lg">{displayName}</span>
           </div>
-          <Separator />
+          <Separator/>
           <nav className="flex flex-col gap-1">
             {visibleNavItems.map((item) => {
               const isActive = location.pathname === item.path
@@ -388,10 +330,10 @@ export function Layout() {
                   key={item.path}
                   to={item.path}
                   className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
- isActive
- ? 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-foreground'
- : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-50'
- }`}
+                    isActive
+                      ? 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-foreground'
+                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-50'
+                  }`}
                 >
                   <span className="material-symbols-outlined text-lg">{item.icon}</span>
                   <span>{item.label}</span>
@@ -405,9 +347,9 @@ export function Layout() {
       {/* Main Sandbox Canvas Viewport */}
       <main className="flex-1 flex flex-col h-full overflow-hidden">
         <div className="flex-1 overflow-y-auto p-6">
-          <Outlet />
+          <Outlet/>
         </div>
-        <NowPlayingBar />
+        <NowPlayingBar/>
       </main>
     </div>
   )
