@@ -1,8 +1,8 @@
-# Dune Weaver Custom Menu Modification & Restore Guide
+# Dune Weaver Text Compiler & Custom Menu Guide
 
-This guide details how to add a custom standalone HTML utility (such as the **Sand Table Text Compiler**) directly into the native Dune Weaver 4.0 React user interface as a sidebar menu item. It also contains instructions for safely backing up your modifications so they can be instantly restored following an official software or firmware update.
+This guide details how to install and use the **Sand Table Text Compiler** within your Dune Weaver 4.0 environment. You can choose to deploy it via a quick **Simplified Standalone** drop-in, or perform a **Full UI Menu Integration** to add it directly to the native React sidebar. 
 
-To protect your files from being wiped out during system updates, your custom source assets are stored completely outside the tracked repository in a dedicated home folder (`~/my-custom-tools/`).
+To protect your files from being wiped out during system updates, your custom source assets should be stored completely outside the tracked repository in a dedicated home folder (`~/my-custom-tools/`).
 
 ---
 
@@ -29,12 +29,27 @@ Dune Weaver runs natively on the Raspberry Pi as a Linux `systemd` background se
 
 ---
 
-## 🚀 Section 1: Initial First-Time Setup Instructions
+## 🚀 Section 1: Installation Options
 
-Follow these steps if you are setting up this custom menu modification for the first time on an existing Dune Weaver environment over SSH.
+You can install this tool using one of two methods, depending on your comfort level with compiling the frontend.
 
-### Step 1.1: Create the Safe Vault and Store Assets
+### Option A: Simplified Standalone Deployment (Quick)
+This method is the easiest way to get started and does not require modifying or recompiling the native Dune Weaver interface. 
 
+1. **Transfer the file:** Copy `text.html` directly into the web server's static folder:
+   ```bash
+   cp text.html ~/dune-weaver/static/
+   ```
+2. **Access the tool:** Open your web browser and navigate directly to the asset using your table's local IP address:
+   `http://<YOUR_PI_IP>:8000/static/text.html`
+
+> **⚠️ Downsides of Option A:** > * **No UI Integration:** You must manually type or bookmark this long URL to access the tool.
+> * **Update Wipeout:** The `static` directory is completely erased and rebuilt during official Dune Weaver software updates. You will lose `text.html`. Always keep a safe backup copy in a separate folder like `~/my-custom-tools/`.
+
+### Option B: Full UI Menu Integration (Advanced)
+This method adds a permanent "Text Compiler" button to your Dune Weaver sidebar menu. It uses a "Safe Vault" to protect your files from being wiped out during system updates.
+
+#### Step 1.1: Create the Safe Vault and Store Assets
 Log into your Raspberry Pi over SSH and create the protected folder outside of the repository path:
 
 ```bash
@@ -45,8 +60,7 @@ Place your custom canvas utility file (`text.html`) and the modified layout comp
 
 *(If you are creating them via terminal, run `nano ~/my-custom-tools/text.html` and `nano ~/my-custom-tools/Layout.tsx`, paste the respective code blocks, then save with `Ctrl+O` and exit with `Ctrl+X`).*
 
-### Step 1.2: Swap the Layout File into the Core Application Space
-
+#### Step 1.2: Swap the Layout File into the Core Application Space
 Overwrite the default repository layout file with your custom version:
 
 ```bash
@@ -55,8 +69,7 @@ cp /home/pi/my-custom-tools/Layout.tsx /home/pi/dune-weaver/frontend/src/compone
 
 > **Note:** If your Raspberry Pi user account is not named `pi`, replace `/home/pi/` with your exact home path across all commands in this guide.
 
-### Step 1.3: Compile the Frontend Framework
-
+#### Step 1.3: Compile the Frontend Framework
 Navigate into the frontend code boundary and trigger the production Vite compiler:
 
 ```bash
@@ -71,16 +84,14 @@ rm -rf ../static/*
 cp -r dist/* ../static/
 ```
 
-### Step 1.4: Inject the Symbolic Link Portal
-
+#### Step 1.4: Inject the Symbolic Link Portal
 Create a Linux Symbolic Link (Symlink). This creates an automated virtual shortcut inside the backend folder pointing directly back to your persistent source asset:
 
 ```bash
 ln -s /home/pi/my-custom-tools/text.html /home/pi/dune-weaver/static/text.html
 ```
 
-### Step 1.5: Reboot the System Service
-
+#### Step 1.5: Reboot the System Service
 Head back to the root project directory and restart the native systemd service script wrapper to flush the application cache:
 
 ```bash
@@ -94,7 +105,7 @@ cd ~/dune-weaver
 
 When you update Dune Weaver via the web interface dashboard or via a terminal `git pull`, the repository synchronization sequence forces a hard overwrite on `Layout.tsx` back to factory settings and completely wipes out the contents of the `static/` directory.
 
-Because your source modifications live safely inside `~/my-custom-tools/`, you can completely restore your customized Text Compiler sidebar integration over SSH in less than 30 seconds by executing the following copy-and-paste command string:
+If you chose **Option B (Full UI Menu Integration)**, because your source modifications live safely inside `~/my-custom-tools/`, you can completely restore your customized Text Compiler sidebar integration over SSH in less than 30 seconds by executing the following copy-and-paste command string:
 
 ```bash
 # 1. Navigate to the core project workspace
@@ -118,6 +129,8 @@ ln -s /home/pi/my-custom-tools/text.html /home/pi/dune-weaver/static/text.html
 cd ..
 ./dw restart
 ```
+
+*(Note: If you chose **Option A**, simply re-copy your backed-up `text.html` file back into `~/dune-weaver/static/` after an update).*
 
 ---
 
