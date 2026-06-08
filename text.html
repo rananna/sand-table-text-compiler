@@ -83,7 +83,7 @@
         .canvas-overlay-text { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); background: var(--panel-bg); padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border-color); opacity: 0.9; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
         .canvas-controls { pointer-events: auto; display: flex; gap: 8px; }
         .telemetry-display { background: var(--input-bg); border: 1px solid var(--border-color); border-left: 4px solid var(--accent-gold); border-radius: 10px; padding: 16px; font-family: monospace; font-size: 0.85rem; line-height: 1.6; box-shadow: var(--shadow-inner); }
-        .telemetry-header { color: var(--text-muted); font-weight: bold; margin-bottom: 10px; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px; }
+        .telemetry-display-header { color: var(--text-muted); font-weight: bold; margin-bottom: 10px; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px; }
         .telemetry-row { display: flex; justify-content: space-between; border-bottom: 1px dashed var(--border-color); padding: 6px 0; }
         .telemetry-row:last-child { border-bottom: none; }
         .telemetry-val { color: var(--text-main); font-weight: bold; }
@@ -332,7 +332,7 @@
             </div>
 
             <div class="telemetry-display">
-                <div class="telemetry-header">📡 Telemetry Dashboard</div>
+                <div class="text-main" style="font-weight: bold; margin-bottom: 10px; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px;">📡 Telemetry Dashboard</div>
                 <div class="telemetry-row"><span>Vector Nodes:</span><span id="tel-nodes" class="telemetry-val">--</span></div>
                 <div class="telemetry-row"><span>Path Rotations:</span><span id="tel-revs" class="telemetry-val">--</span></div>
                 <div class="telemetry-row"><span>MKS DLC32 Optimization:</span><span id="tel-rdp" class="telemetry-val" style="color:var(--text-muted)">Inactive</span></div>
@@ -407,23 +407,54 @@
                 });
                 
                 if (filtered.length === 0) filtered = strokes.filter(s => s && s.length > 0); 
-                if (filtered.length === 0) return [];
+                return filtered || [];
+            }
+
+            // --- REBUILT: Full-Trace Loop Router ---
+            static fixRoundLetters(strokes, char) {
+                let baseChar = char.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+                const targetChars = ['a', 'c', 'd', 'e', 'g', 'o', 'q'];
                 
-                for (let s of filtered) {
-                    let startX = s[0][0];
-                    let endX = s[s.length - 1][0];
-                    if (startX > endX + 0.02) {
-                        s.reverse();
+                if (!targetChars.includes(baseChar) || !strokes || strokes.length === 0) return strokes;
+
+                let mainStroke = strokes[0];
+                if (mainStroke.length < 5) return strokes;
+
+                // Find the absolute leftmost point in the first 65% of the stroke 
+                // (This catches the belly loop but ignores descending stems on 'g' or 'q')
+                let idxLeft = 0;
+                let minX = Infinity;
+                let searchLimit = Math.min(mainStroke.length, Math.floor(mainStroke.length * 0.65));
+                
+                for (let k = 0; k < searchLimit; k++) {
+                    if (mainStroke[k][0] < minX) {
+                        minX = mainStroke[k][0];
+                        idxLeft = k;
                     }
                 }
 
-                filtered.sort((a, b) => {
-                    let maxXa = Math.max(...a.map(p => p[0]));
-                    let maxXb = Math.max(...b.map(p => p[0]));
-                    return maxXa - maxXb;
-                });
+                // If the leftmost point is already at or very near the start, no routing needed.
+                if (idxLeft < 5) return strokes;
+
+                let newStroke = [];
                 
-                return filtered;
+                // 1. Enter at the leftmost outer edge and trace BACKWARD to the original start point
+                // This traces over the problematic lead-in tail safely from the outside.
+                for (let k = idxLeft; k >= 0; k--) {
+                    newStroke.push([...mainStroke[k]]);
+                }
+                
+                // 2. Trace FORWARD from the original start point to the end
+                // This draws the 100% complete character geometry just as the font designer intended.
+                for (let k = 1; k < mainStroke.length; k++) {
+                    newStroke.push([...mainStroke[k]]);
+                }
+
+                let newStrokes = [newStroke];
+                for (let k = 1; k < strokes.length; k++) {
+                    newStrokes.push(strokes[k]);
+                }
+                return newStrokes;
             }
 
             static mergeInternalStrokes(glyphData) {
@@ -468,8 +499,8 @@
 
             static upgrade(rawFont, droopMult=0.3) {
                 let fontData = JSON.parse(JSON.stringify(rawFont));
-
                 if(!fontData.kerning) fontData.kerning = {};
+                
                 Object.assign(fontData.kerning, {
                     "a-b": -0.065, "o-r": -0.040, "v-e": -0.050, "w-a": -0.035, 
                     "o-o": -0.025, "e-r": -0.035, "r-s": -0.025, "e-e": -0.030,
@@ -477,17 +508,20 @@
                 });
 
                 if(!fontData.ligatures) fontData.ligatures = {};
-                fontData.ligatures['or'] = {
-                    width: 0.650, requires_travel: false,
-                    exit_type: "baseline",
-                    strokes: [[[0.0, 0.4], [0.15, 0.4], [0.30, 0.45], [0.50, 0.0], [0.650, 0.0]]]
-                };
+
+                let trickyPairs = [
+                    "or", "ou", "oo", "on", "om", "os", "oe", "oi", "ox",
+                    "ve", "vi", "va", "vo", "vr", "vu", "vs",
+                    "we", "wi", "wa", "wo", "wr", "wu", "ws",
+                    "th", "tt", "te", "ti", "ta", "to", "tr",
+                    "fi", "fl", "sh", "ch", "st", "ee", "ll"
+                ];
 
                 let midlineExits = new Set(['b', 'o', 'v', 'w']);
 
+                // --- PIPELINE REORDER STEP 1: Route left edges and clean base glyphs first ---
                 for(let char in fontData.glyphs) {
                     let glyph = fontData.glyphs[char];
-                    
                     if(char === ' ') {
                         glyph.strokes = [];
                         glyph.requires_travel = false;
@@ -495,16 +529,142 @@
                         this.calculateBbox(glyph);
                         continue;
                     }
-
+                    
                     let cleanStrokes = this.optimizeCursiveStrokes(glyph.strokes || []);
+                    
+                    // NOTE: removeInnerCounters has been definitively removed to protect 'W' and 't' crossbars.
+                    
+                    // Apply the reverse/forward trace routing
+                    cleanStrokes = this.fixRoundLetters(cleanStrokes, char);
+                    
+                    // Determine exit type using the normalized base character
+                    let baseChar = char.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+                    
                     glyph.strokes = this.mergeInternalStrokes({strokes: cleanStrokes});
                     glyph.requires_travel = false;
-
-                    let isMidline = midlineExits.has(char.toLowerCase());
-                    glyph.exit_type = isMidline ? "midline" : "baseline";
-
+                    glyph.exit_type = midlineExits.has(baseChar) ? "midline" : "baseline";
                     this.calculateBbox(glyph);
                 }
+
+                // --- PIPELINE REORDER STEP 2: Build ligatures bridging to the newly defined left perimeters ---
+                for (let pair of trickyPairs) {
+                    let c1 = pair[0];
+                    let c2 = pair[1];
+                    let g1 = fontData.glyphs[c1] || fontData.glyphs[c1.toUpperCase()];
+                    let g2 = fontData.glyphs[c2] || fontData.glyphs[c2.toUpperCase()];
+
+                    if (g1 && g2 && g1.strokes && g2.strokes) {
+                        let kern = fontData.kerning[`${c1}-${c2}`] || 0;
+                        let combinedStrokes = [];
+
+                        for (let s of g1.strokes) {
+                            combinedStrokes.push(s.map(pt => [...pt]));
+                        }
+
+                        let offset = g1.width + kern;
+
+                        if (combinedStrokes.length > 0 && combinedStrokes[combinedStrokes.length - 1].length > 0 && 
+                            g2.strokes.length > 0 && g2.strokes[0].length > 0) {
+                            
+                            let p1 = combinedStrokes[combinedStrokes.length - 1][combinedStrokes[combinedStrokes.length - 1].length - 1];
+                            let p2_orig = g2.strokes[0][0];
+                            
+                            let g2MinX = Infinity;
+                            for (let s of g2.strokes) {
+                                for (let pt of s) {
+                                    if (pt[0] < g2MinX) g2MinX = pt[0];
+                                }
+                            }
+                            if (g2MinX === Infinity) g2MinX = 0;
+
+                            let actualP2X = p2_orig[0] + offset;
+                            let minGap = 0.005; 
+                            
+                            if (actualP2X < p1[0] + minGap) {
+                                offset += (p1[0] + minGap - actualP2X); 
+                            }
+                            
+                            let actualG2MinX = g2MinX + offset;
+                            let allowedOverlap = 0.08; 
+                            if (actualG2MinX < p1[0] - allowedOverlap) {
+                                offset += (p1[0] - allowedOverlap - actualG2MinX);
+                            }
+                        }
+
+                        let c2Strokes = g2.strokes.map(s => s.map(pt => [pt[0] + offset, pt[1]]));
+                        let comboWidth = offset + g2.width;
+
+                        if (combinedStrokes.length > 0 && c2Strokes.length > 0) {
+                            let s1 = combinedStrokes[combinedStrokes.length - 1];
+                            let s2 = c2Strokes[0];
+
+                            if (s1.length > 0 && s2.length > 0) {
+                                let p1 = s1[s1.length - 1];
+                                let p2 = s2[0];
+                                
+                                let isHighExit = midlineExits.has(c1);
+                                let bridge = [];
+                                let steps = 12; 
+                                
+                                let distX = p2[0] - p1[0];
+                                
+                                let cp1x, cp2x, cp1y, cp2y;
+
+                                let g2MinX = Infinity;
+                                for (let s of c2Strokes) {
+                                    for (let pt of s) {
+                                        if (pt[0] < g2MinX) g2MinX = pt[0];
+                                    }
+                                }
+                                
+                                let isEntryInside = (p2[0] > g2MinX + 0.05);
+
+                                if (isHighExit) {
+                                    cp1y = p1[1] - 0.01;
+                                    cp2y = p2[1] - 0.01;
+                                    cp1x = p1[0] + (distX * 0.4);
+                                    cp2x = p2[0] - (distX * 0.4);
+                                } else if (isEntryInside) {
+                                    cp1y = p1[1] - 0.15;
+                                    cp2y = p2[1] - 0.15;
+                                    cp1x = p1[0] + (distX * 0.2);
+                                    cp2x = p2[0] - (distX * 0.1);
+                                } else {
+                                    cp1y = p1[1] - 0.03;
+                                    cp2y = p2[1] - 0.03;
+                                    cp1x = p1[0] + (distX * 0.4);
+                                    cp2x = p2[0] - (distX * 0.4);
+                                }
+
+                                for (let j = 1; j < steps; j++) {
+                                    let t = j / steps;
+                                    let mt = 1 - t;
+                                    
+                                    let x = mt*mt*mt*p1[0] + 3*mt*mt*t*cp1x + 3*mt*t*t*cp2x + t*t*t*p2[0];
+                                    let y = mt*mt*mt*p1[1] + 3*mt*mt*t*cp1y + 3*mt*t*t*cp2y + t*t*t*p2[1];
+                                    
+                                    bridge.push([x, y]);
+                                }
+                                
+                                s1.push(...bridge, ...s2);
+                                
+                                for (let k = 1; k < c2Strokes.length; k++) {
+                                    combinedStrokes.push(c2Strokes[k]);
+                                }
+                            }
+                        } else {
+                            combinedStrokes.push(...c2Strokes);
+                        }
+
+                        fontData.ligatures[pair] = {
+                            width: comboWidth,
+                            requires_travel: false,
+                            exit_type: midlineExits.has(c2) ? "midline" : "baseline",
+                            strokes: combinedStrokes
+                        };
+                    }
+                }
+
                 return fontData;
             }
         }
@@ -512,7 +672,6 @@
         // ==========================================
         // BROWSER SVG PARSER
         // ==========================================
-        
         let sharedSvgPath = null;
         function getSharedSvgPath() {
             if (!sharedSvgPath) {
@@ -1007,17 +1166,50 @@
                     [currentX + (glyphData.exit_point[0] * scaleX), currentY + (glyphData.exit_point[1] * scaleY)] : null;
 
                 if (lastPt) {
-                    let physDist = Math.hypot(entryAbs[0] - lastPt[0], entryAbs[1] - lastPt[1]);
+                    let distX = entryAbs[0] - lastPt[0];
                     
-                    let curDroop = 0;
-                    if (physDist > scaleX * 0.15) {
-                        curDroop = activeDroop; 
-                    } else {
-                        curDroop = 0; 
-                    }
+                    if (distX > 0.01) {
+                        let isHighExit = prevGlyphData && prevGlyphData.exit_type === "midline";
+                        
+                        let cp1x = lastPt[0] + (distX * 0.4);
+                        let cp2x = entryAbs[0] - (distX * 0.4);
+                        
+                        let cp1y, cp2y;
 
-                    this.addDroopLine(targetPath, lastPt, entryAbs, curDroop);
-                } else { targetPath.push(entryAbs); }
+                        let glyphMinX = glyphData.bbox ? glyphData.bbox[0] * scaleX : entryAbs[0];
+                        let actualGlyphMinX = currentX + glyphMinX;
+                        
+                        let isEntryInside = (entryAbs[0] > actualGlyphMinX + (0.05 * scaleX));
+
+                        if (isHighExit) {
+                            cp1y = lastPt[1] - (activeDroop * 0.1);
+                            cp2y = entryAbs[1] - (activeDroop * 0.1);
+                        } else if (isEntryInside) {
+                            let swoopDepth = activeDroop + (0.12 * scaleY);
+                            cp1y = lastPt[1] - swoopDepth;
+                            cp2y = entryAbs[1] - swoopDepth;
+                            cp1x = lastPt[0] + (distX * 0.2); 
+                            cp2x = entryAbs[0] - (distX * 0.1);
+                        } else {
+                            cp1y = lastPt[1] - activeDroop;
+                            cp2y = entryAbs[1] - activeDroop;
+                        }
+                        
+                        let steps = Math.max(8, Math.floor(distX * 150)); 
+                        for (let j = 1; j < steps; j++) {
+                            let t = j / steps;
+                            let mt = 1 - t;
+                            let x = mt*mt*mt*lastPt[0] + 3*mt*mt*t*cp1x + 3*mt*t*t*cp2x + t*t*t*entryAbs[0];
+                            let y = mt*mt*mt*lastPt[1] + 3*mt*mt*t*cp1y + 3*mt*t*t*cp2y + t*t*t*entryAbs[1];
+                            targetPath.push([x, y]);
+                        }
+                        targetPath.push(entryAbs);
+                    } else {
+                        this.addDroopLine(targetPath, lastPt, entryAbs, 0); 
+                    }
+                } else { 
+                    targetPath.push(entryAbs); 
+                }
 
                 let lastStrokePt = entryAbs;
                 for (let stroke of glyphData.strokes) {
@@ -1055,6 +1247,7 @@
                 if (!text.trim()) text = " "; 
 
                 let lines = text.split('\n'); let baseHeight = 0.16;
+                let ballRatio = ballDiam / tableDiam;
 
                 let getParamX = (u, m) => {
                     if (m === "sinewave") return (u / (2 * Math.PI)) * 1.6 - 0.8;
@@ -1102,8 +1295,12 @@
                     scaleFactorX = charHeight;
                 } else { charHeight = baseHeight; scaleFactorX = charHeight; lineSpacing = charHeight * 1.5 * leadMult; }
 
+                let tracking = (kernMult - 1.0) * 0.1 + Math.max(0, ballRatio - 0.02) * 0.6;
+                if (mode === "centered") {
+                    lineSpacing = charHeight * 1.3 * 1.5 * leadMult + Math.max(0, ballRatio - 0.02) * charHeight * 0.5;
+                }
+
                 this.baseCharHeight = charHeight; this.cartesianPath = []; let rawRibbon = []; let activeDroop = droopVal * charHeight;
-                let tracking = (kernMult - 1.0) * 0.1;
 
                 if (mode === "centered") {
                     let linesMaxWidth = Math.max(...lines.map(l => getRibbonWidth(l, kernMult, useLigatures) * scaleFactorX));
@@ -1130,9 +1327,30 @@
 
                             let kern = previousChar ? getKerning(previousChar, char.charAt(0), 1.0) : 0;
                             if (previousChar) {
-                                currentX += ((kern + tracking) * scaleFactorX);
+                                let proposedX = currentX + ((kern + tracking) * scaleFactorX);
+                                
+                                if (lastPt) {
+                                    let p1x = lastPt[0];
+                                    let p2_origX = glyphData.entry_point ? glyphData.entry_point[0] : (glyphData.strokes && glyphData.strokes.length > 0 && glyphData.strokes[0].length > 0 ? glyphData.strokes[0][0][0] : 0);
+                                    
+                                    let actualP2X = proposedX + (p2_origX * scaleFactorX);
+                                    let minGap = 0.005 * scaleFactorX;
+                                    
+                                    if (actualP2X < p1x + minGap) {
+                                        proposedX += (p1x + minGap - actualP2X);
+                                    }
+                                    
+                                    let g2MinX = glyphData.bbox ? glyphData.bbox[0] : p2_origX;
+                                    let actualG2MinX = proposedX + (g2MinX * scaleFactorX);
+                                    let allowedOverlap = 0.08 * scaleFactorX;
+                                    
+                                    if (actualG2MinX < p1x - allowedOverlap) {
+                                        proposedX += (p1x - allowedOverlap - actualG2MinX);
+                                    }
+                                }
+                                currentX = proposedX;
                             }
-                            lastPt = this._appendCharacterStrokes(this.cartesianPath, glyphData, currentX, currentLineY, scaleFactorX, charHeight, activeDroop, lastPt, prevGlyphData);
+                            lastPt = this._appendCharacterStrokes(this.cartesianPath, glyphData, currentX, currentLineY, scaleFactorX, charHeight * 1.3, activeDroop, lastPt, prevGlyphData);
                             currentX += (glyphData.width * scaleFactorX); previousChar = char.slice(-1); prevGlyphData = glyphData; i += step;
                         }
 
@@ -1162,9 +1380,30 @@
 
                         let kern = previousChar ? getKerning(previousChar, char.charAt(0), 1.0) : 0;
                         if (previousChar) {
-                            accumulatedX += ((kern + tracking) * scaleFactorX);
+                            let proposedX = accumulatedX + ((kern + tracking) * scaleFactorX);
+                            
+                            if (lastPt) {
+                                let p1x = lastPt[0];
+                                let p2_origX = glyphData.entry_point ? glyphData.entry_point[0] : (glyphData.strokes && glyphData.strokes.length > 0 && glyphData.strokes[0].length > 0 ? glyphData.strokes[0][0][0] : 0);
+                                
+                                let actualP2X = proposedX + (p2_origX * scaleFactorX);
+                                let minGap = 0.005 * scaleFactorX;
+                                
+                                if (actualP2X < p1x + minGap) {
+                                    proposedX += (p1x + minGap - actualP2X);
+                                }
+                                
+                                let g2MinX = glyphData.bbox ? glyphData.bbox[0] : p2_origX;
+                                let actualG2MinX = proposedX + (g2MinX * scaleFactorX);
+                                let allowedOverlap = 0.08 * scaleFactorX;
+                                
+                                if (actualG2MinX < p1x - allowedOverlap) {
+                                    proposedX += (p1x - allowedOverlap - actualG2MinX);
+                                }
+                            }
+                            accumulatedX = proposedX;
                         }
-                        lastPt = this._appendCharacterStrokes(rawRibbon, glyphData, accumulatedX, 0.0, scaleFactorX, charHeight, activeDroop, lastPt, prevGlyphData);
+                        lastPt = this._appendCharacterStrokes(rawRibbon, glyphData, accumulatedX, 0.0, scaleFactorX, charHeight * 1.3, activeDroop, lastPt, prevGlyphData);
                         accumulatedX += (glyphData.width * scaleFactorX); previousChar = char.slice(-1); prevGlyphData = glyphData; i += step;
                     }
                     
@@ -1181,12 +1420,19 @@
 
                     if (mode === "circle") {
                         let circleRawSum = getRibbonWidth(text, kernMult, useLigatures);
+                        charHeight = (2 * Math.PI * this.maxRadius) / circleRawSum;
+                        if (charHeight > 0.32) charHeight = 0.32; 
+                        circleRadius = this.maxRadius - charHeight; scaleFactorX = charHeight; 
+                        
                         let totalAngle = circleRawSum * scaleFactorX / circleRadius;
-                        let startAngle = (Math.PI / 2) + (totalAngle / 2);
+                        let startAngle = -Math.PI / 2 - (totalAngle / 2); 
                         
                         for (let pt of rawRibbon) {
-                            let angle = startAngle - (pt[0] / circleRadius);
-                            this.cartesianPath.push([(circleRadius + pt[1]) * Math.cos(angle), (circleRadius + pt[1]) * Math.sin(angle)]);
+                            let angle = startAngle + (pt[0] / circleRadius);
+                            this.cartesianPath.push([
+                                (circleRadius - pt[1]) * Math.cos(angle), 
+                                (circleRadius - pt[1]) * Math.sin(angle)
+                            ]);
                         }
                     } else if (mode === "spiral") {
                         let bTurnGrowth = (charHeight * 2.5) / (2 * Math.PI);
@@ -1201,9 +1447,10 @@
                             if (theta < innerTheta) theta = innerTheta;
 
                             let baseR = bTurnGrowth * theta;
-                            let angle = (Math.PI / 2) + theta;
-                            let tx = -(bTurnGrowth * Math.cos(angle) - baseR * Math.sin(angle));
-                            let ty = -(bTurnGrowth * Math.sin(angle) + baseR * Math.cos(angle));
+                            let angle = -Math.PI / 2 + (maxTheta - theta);
+
+                            let tx = bTurnGrowth * Math.cos(angle) - baseR * Math.sin(angle);
+                            let ty = bTurnGrowth * Math.sin(angle) + baseR * Math.cos(angle);
                             let mag = Math.hypot(tx, ty);
                             let nx = -ty / mag; let ny = tx / mag;
 
@@ -1275,7 +1522,7 @@
                         else { scaledPath.push(pt); }
                     }
                     this.cartesianPath = scaledPath;
-                    this.finalCharHeight = this.baseCharHeight * this.appliedScaleFactor;
+                    this.finalCharHeight = this.baseCharHeight * this.appliedScaleFactor * 1.3;
 
                     let segments = []; let currentSeg = [];
                     for(let pt of this.cartesianPath) {
@@ -1382,14 +1629,20 @@
                     }
                     this.cartesianPath = resolvedPath;
 
+                    for (let i = 0; i < this.cartesianPath.length; i++) {
+                        if (!Number.isNaN(this.cartesianPath[i][0])) {
+                            this.cartesianPath[i][1] = -this.cartesianPath[i][1];
+                        }
+                    }
+
                     let prefixPath = []; let textStart = this.cartesianPath[0];
                     let targetAngle = Math.atan2(textStart[1], textStart[0]);
                     if (targetAngle < 0) targetAngle += 2 * Math.PI;
                     
                     if (wipe) {
                         let physicalRadius = tableDiam / 2.0; let ballFraction = ballDiam / physicalRadius;
-                        let wipeSpacing = (ballFraction * 0.8) / (wipeQuality / 100.0); 
-                        let turns = this.maxRadius / wipeSpacing; let steps = Math.floor(turns * 100); 
+                        let wipeSpacing = (ballFraction * 0.2) / (wipeQuality / 100.0); 
+                        let turns = this.maxRadius / wipeSpacing; let steps = Math.floor(turns * 200); 
                         
                         for(let i=0; i<=steps; i++) {
                             let r = (i/steps) * (this.maxRadius * 0.99); 
@@ -1463,7 +1716,7 @@
 
                 this.finalPolarPath = [rawPolarPath[0]];
                 const minThetaRes = 0.0001; 
-                const minRhoRes = 0.0001;     
+                const minRhoRes = 0.0001;      
 
                 for(let i=1; i<rawPolarPath.length; i++) {
                     let prev = this.finalPolarPath[this.finalPolarPath.length-1];
@@ -1555,7 +1808,7 @@
                 
                 if (!polarPath || !polarPath.length) return;
                 
-                let pts = polarPath.map(pt => [ cx + (pt[1] * Math.cos(pt[0]) * activeScale), cy - (pt[1] * Math.sin(pt[0]) * activeScale) ]);
+                let pts = polarPath.map(pt => [ cx + (pt[1] * Math.cos(pt[0]) * activeScale), cy + (pt[1] * Math.sin(pt[0]) * activeScale) ]);
                 ctx.lineCap = "round"; ctx.lineJoin = "round";
                 
                 let tableDiam = parseFloat(document.getElementById('table-diam').value) || 500;
@@ -1821,9 +2074,25 @@
 
         function triggerFileDownload() {
             if (!lastGeneratedPolarPath || !lastGeneratedPolarPath.length) return;
-            let n = (document.getElementById('filename-input').value || 'text_layout').replace(/[^a-zA-Z0-9_\-]/g, '') || 'dune_weaver';
+            let baseName = (document.getElementById('filename-input').value || 'text_layout').replace(/[^a-zA-Z0-9_\-]/g, '') || 'dune_weaver';
+            let downloadCounts = JSON.parse(localStorage.getItem('dw_download_counts') || '{}');
+            let finalName = baseName;
+            
+            if (downloadCounts[baseName] !== undefined) {
+                finalName = `${baseName}_${downloadCounts[baseName]}`;
+                downloadCounts[baseName]++;
+            } else {
+                downloadCounts[baseName] = 1;
+            }
+            localStorage.setItem('dw_download_counts', JSON.stringify(downloadCounts));
+
             let blob = new Blob([getThrString()], { type: "text/plain;charset=utf-8" });
-            let a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `${n}.thr`; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            let a = document.createElement("a"); 
+            a.href = URL.createObjectURL(blob); 
+            a.download = `${finalName}.thr`; 
+            document.body.appendChild(a); 
+            a.click(); 
+            document.body.removeChild(a);
         }
 
         async function copyRawPath() {
