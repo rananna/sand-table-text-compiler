@@ -37,13 +37,14 @@ You can install this tool using one of two methods, depending on your comfort le
 This method is the easiest way to get started and does not require modifying or recompiling the native Dune Weaver interface. 
 
 1. **Transfer the file:** Copy `text.html` directly into the web server's static folder:
-   ```bash
+```bash
    cp text.html ~/dune-weaver/static/
    ```
 2. **Access the tool:** Open your web browser and navigate directly to the asset using your table's local IP address:
    `http://<YOUR_PI_IP>:8000/static/text.html`
 
-> **⚠️ Downsides of Option A:** > * **No UI Integration:** You must manually type or bookmark the long URL to access the tool.
+> **⚠️ Downsides of Option A:** 
+> * **No UI Integration:** You must manually type or bookmark the long URL to access the tool.
 > * **Update Wipeout:** The `static` directory is completely erased and rebuilt during official Dune Weaver software updates. You will lose `text.html`. Always keep a safe backup copy in a separate folder like `~/my-custom-tools/`.
 
 ### Option B: Full UI Menu Integration (Advanced)
@@ -134,46 +135,66 @@ cd ..
 
 ---
 
-## 📝 Section 3: Reference Documentation for text.html
+## 📝 Section 3: Comprehensive User Guide for text.html
 
-A unified, browser-based serial interface and text-to-path compiler for kinetic sand tables. This tool translates standard alphanumeric text into continuous, machine-ready Theta-Rho (`.thr`) coordinate paths.
+The Dune Weaver Text Compiler is a unified, browser-based serial interface and text-to-path compiler for kinetic sand tables. It translates standard alphanumeric text into continuous, machine-ready Theta-Rho (`.thr`) coordinate paths.
 
-### Features
-* **Custom Pathing Engine:** Transforms strings into continuous vectors using a custom retraced proportional font, minimizing gantry travel time and eliminating sand drags between characters.
-* **Complex Geometric Projections:** Projects flat text along various parametric curves:
-	+ Centered Block Stack, Concentric Circular Ring Bend, Archimedean Spiral Wrap, Rolling Sine Wave, Ellipse, Soft Petal (5-Ripple), Cassini Peanut, and Perimeter Squircle.
-* **Live Virtual Twin:** Real-time, Retina-ready HTML5 Canvas rendering of the calculated sand path.
-* **Pi Telemetry Dashboard:** Tracks vector output nodes, calculated font scale, and rotational matrix loops.
-* **Direct Hardware Interfacing:** Streams coordinates directly to a Raspberry Pi serial interface (via UART endpoint).
-* **Standalone Export:** Works completely offline to generate and download `.thr` files for manual transfer.
+### Background: Why Single-Line SVG Fonts?
+Standard web and print fonts (like TrueType `.ttf` or OpenType `.otf`) are designed as **outlines**. If a machine traces a standard font, it draws the inside and outside borders of the letter, resulting in "bubble letters." 
 
-### ⚠️ System Warnings & Error States (Red Text)
-Dune Weaver actively monitors your toolpath and hardware limits. If the system detects an issue that will physically fail on the table, the relevant UI element will turn **red**.
+Sand tables, pen plotters, and laser engravers require **Single-Line Fonts** (also called stroke or stick fonts). These are pure vector paths without thickness. The steel ball *is* the thickness of the pen stroke. 
 
-* **Red Canvas Toolpaths:** If the drawn text in the Virtual Twin preview turns red instead of natural sand colors, it means the physical ball diameter is too wide for the current text scale. The ball will physically overlap its own path and erase the cursive loops. *Fix: Type fewer words to allow Auto-Fit to scale the text up, manually increase scale, or specify a smaller Ball Dia.*
-* **POOR (Loops Erased):** Located in the Telemetry Dashboard under *Physics Legibility*. This is the text-based UI warning corresponding to the red canvas toolpaths above.
-* **⚠️ INT32 ROLLOVER:** Located in the Telemetry Dashboard next to *Path Rotations*. If a single continuous toolpath exceeds 1,000 full rotations, it risks overflowing the 32-bit integer limit, causing the table to freeze or crash. *Fix: Break the text into smaller batches or reduce the total length.*
-* **Font Blocked / Compilation Error:** Appears in the main Status Banner if the local font fails to fetch, or if a manually uploaded SVG/JSON has broken syntax. 
-* **Upload Errors:** Appears in the main Status Banner if the controller is off or the API URL is incorrect.
+Because kinetic sand tables require one unbroken line to function properly, this compiler automatically links these single-line SVGs together. It calculates graceful "droop" lines for jumps between characters and uses advanced collision detection to trace completely around the outer perimeter of loops (like in the letters 'o', 'a', and 'd') to prevent the ball from crossing over its own path and destroying the cursive interior.
 
-### Quick Start & Usage
-1. **Load a Font:** Drag and drop an `.svg` or `.json` font file directly onto the window.
-2. **Enter Text:** Type your message in the **Message Payload** text box.
-3. **Select a Projection:** Choose a mathematical shape from the **Geometric Projection** dropdown.
-4. **Preview:** The canvas on the right will automatically compile and display your toolpath. 
-5. **Export:** Click **💾 Download .THR** to save the file locally.
+### ⚙️ Core Configuration Options
 
-### User Interface Overview
-* **Control Dashboard:** Houses all layout, hardware specifications, and toolpath optimization parameters.
-* **Advanced Tuning:** Adjust **Word Jump Droop** (for elegant cursive jumps), **Perimeter Margin**, and **Context Ligatures** for specialized character transitions.
-* **Telemetry Dashboard:** Monitor Vector Nodes, Path Rotations, and Physics Legibility.
-* **Virtual Twin:** A 1:1 simulation of the physical table. Pan, zoom, and scrub through simulation time.
-* **Loupe Tool:** Inspect vector intersections and ball-width overlap in high detail.
-* **Keyboard Shortcuts:** `Ctrl + Enter` (Upload), `Ctrl + S` (Download), `Spacebar` (Play/Pause Sim).
+* **Message Payload:** The raw text string you want to render in sand. Multiline text is supported for "Centered Block Stack" mode.
+* **Pattern Name:** Sets the filename for your exported `.thr` file (special characters are automatically stripped).
+* **Geometric Projection:** The mathematical wrapper used to distort the text onto the table.
+    * *Centered Block Stack:* Standard horizontal lines, like a page in a book.
+    * *Concentric Circular Ring Bend:* Wraps the text in a continuous loop around the outer edge.
+    * *Continuous Archimedean Spiral:* Winds the text like the grooves of a vinyl record from the inside out.
+    * *Rolling Sine Wave Ribbon:* Undulates the text up and down across the center.
+    * *Gentle Ellipse / Soft Petal / Cassini Peanut / Squircle:* Maps the text to varying geometric perimeters.
+* **Scaling Strategy:** Forces the overall size of the text. **Auto-Fit** is recommended, as it will automatically calculate the maximum possible size your text can be without scraping the physical edges of your table.
 
-### Project Structure & Roadmap
-* **Structure:** The tool is a single-file application containing the `ProportionalRetracedFont` data, the `DuneWeaverPipeline` math engine, and the UI Controller logic.
-* **Roadmap:** Future plans include the implementation of native browser Web Serial for direct controller communication.
+### 🛠️ Advanced Tuning & Hardware Parameters
+
+* **Table Model / Diameter (mm):** Set this to match your physical table size. This is required for accurate bounds generation and legibility warnings.
+* **Ball Dia. (mm):** The physical width of your steel ball bearing. Crucial for calculating overlap.
+* **Text Alignment:** Left, Center, or Right justification (applies to *Centered Block Stack* only).
+* **Controller API:** The local network address of your table (e.g., `http://192.168.1.100:8000`). Used for the "Save Direct to Table" button.
+* **💧 Word Jump Droop:** Controls the downward gravitational sag of the transit line between individual characters or words. Higher values create deeper swoops.
+* **Perimeter Margin:** Keeps the toolpath away from the absolute wooden lip of your table to prevent the mechanism from grinding on the bumper.
+* **Character Spacing (Kerning):** Adjusts horizontal whitespace between letters.
+* **Line Spacing (Leading):** Adjusts vertical whitespace between rows of text.
+* **Wipe Quality:** If "Prepend Spiral Wipe" is enabled, this slider controls how tight the erasing spiral is. Higher quality equals a longer wipe time.
+* **Est. Feedrate (ms/pt):** A calibration number used to guess how many minutes the print will take based on the total number of vector nodes.
+* **Use Context Ligatures:** Enables complex, pre-calculated transition bridges for tricky letter combinations (e.g., linking a high 'o' to an 'r' smoothly).
+* **Prepend Spiral Wipe:** Adds a full-table spiral clear from the center to the edge *before* the text starts drawing.
+* **Reverse Draw Direction:** Flips the toolpath array. The table will draw the text starting from the last letter and working backward to the first.
+* **Smooth Corners:** Applies Chaikin smoothing algorithms to sharp vector angles to prevent the physical motors from vibrating or shaking on hard corners.
+* **🛠️ Debug Toolpath Nodes:** Visualizes the raw underlying vectors, showing the precise green start point, red exit point, and every coordinate in between.
+
+### 📡 Telemetry Dashboard
+
+The dashboard provides real-time mathematical feedback on your generated path:
+
+* **Vector Nodes:** Total coordinate points sent to the table.
+* **Path Rotations:** The total number of times the ball orbits the center. **⚠️ INT32 ROLLOVER WARNING:** If this number exceeds ~1000 turns in a single file, it may crash some 32-bit controllers.
+* **MKS DLC32 Optimization:** If a path is extremely complex (>6000 nodes), the system automatically applies Ramer-Douglas-Peucker (RDP) point reduction to keep file sizes manageable for standard ESP32 boards.
+* **Final Font Scale:** The actual magnification multiplier the Auto-Fit algorithm applied to your text.
+* **Physics Legibility:** Evaluates if your physical ball bearing is too fat for the cursive loops. If the ball diameter is wider than the drawn loop, the text will smear into a blob, and the UI will warn you with a red **POOR (Loops Erased)** indicator.
+* **Estimated Time:** A rough guess of total print time based on node count and feedrate.
+
+### 🎮 Canvas Controls & Simulation
+
+* **Canvas Viewport:** Click and drag to pan the preview. Scroll to zoom in and out.
+* **Simulation Timeline:** A scrubber bar to move forward or backward through the toolpath over time.
+* **Play / REC:** Click **Play** to watch the virtual steel ball trace your design. Click **REC** to capture the simulation as a `.webm` video file directly to your downloads folder.
+* **Loupe:** Enables a magnifying glass attached to your cursor for inspecting tight line intersections.
+* **Capture:** Takes a high-resolution `.png` screenshot of the final sand design.
+* **Upload / Export:** Use **Save Direct to Table** to push to your API, or **Download .THR** to save the file for a USB drive.
 
 ---
 
@@ -295,7 +316,7 @@ export function Layout() {
 
   return (
     <div className="flex h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50">
-      {/* Side Control Panel Frame */}
+      
       <aside className="w-64 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-between">
         <div className="p-4 flex flex-col gap-4">
           <div className="flex items-center gap-2 px-2">
@@ -326,15 +347,7 @@ export function Layout() {
 
               // Default React Router link execution
               return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-foreground'
-                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-50'
-                  }`}
-                >
+                <Link ${ 'bg-primary/10 'text-slate-600 : ? className="{`flex" dark:bg-primary/20 dark:hover:bg-slate-800 dark:hover:text-slate-50' dark:text-primary-foreground' dark:text-slate-400 font-medium gap-3 hover:bg-slate-100 hover:text-slate-900 isActive items-center key="{item.path}" px-3 py-2 rounded-md text-primary text-sm to="{item.path}" transition-colors }`}>
                   <span className="material-symbols-outlined text-lg">{item.icon}</span>
                   <span>{item.label}</span>
                 </Link>
@@ -344,7 +357,7 @@ export function Layout() {
         </div>
       </aside>
 
-      {/* Main Sandbox Canvas Viewport */}
+      
       <main className="flex-1 flex flex-col h-full overflow-hidden">
         <div className="flex-1 overflow-y-auto p-6">
           <Outlet/>
